@@ -30,6 +30,29 @@ import com.tomgibara.coding.CodedWriter;
 import com.tomgibara.coding.EliasOmegaCoding;
 import com.tomgibara.coding.ExtendedCoding;
 
+/**
+ * Provides {@link TicketMachine} instances to create tickets and a
+ * {@link #decodeTicket(String)} method to decode them. This class may be
+ * regarded as the functional entry point of this package; applications will
+ * generally establish {@link TicketSpec}, {@link TicketConfig} and
+ * {@link TicketFormat} instances for the purpose of creating a ticket factory
+ * that is then used to create and decode {@link Ticket} objects.
+ * <p>
+ * Though ticket factories will frequently be dedicated to creating tickets for
+ * a single origin, factories are able to create tickets from multiple origins.
+ * For this reason, ticket creation is delegated to {@link TicketMachine}
+ * instances which operate on behalf of the factory, with each machine dedicated
+ * to creating tickets for a single origin.
+ *
+ * @author Tom Gibara
+ *
+ * @param <R>
+ *            the type of origin information recorded in tickets
+ * @param <D>
+ *            the type of data information recorded in tickets
+ * @see TicketMachine#ticket()
+ */
+
 //NOTE Keccak is used for a simpler life without HMAC: http://keccak.noekeon.org/ - we simply hash and append
 //NOTE it is a minor weakness of this design that the ticket must be parsed before the checksum can be validated
 //TODO support persistence of serial numbers by passing in interface during config
@@ -87,14 +110,38 @@ public class TicketFactory<R, D> {
 
 	// accessors
 
+	/**
+	 * The configuration with which the factory was created.
+	 *
+	 * @return the configuration, never null
+	 */
+
 	public TicketConfig<R, D> getConfig() {
 		return config;
 	}
+
+	/**
+	 * Specifies text formatting for the encoding of tickets into strings. The
+	 * format used by a factory may be changed at any time and will subsequently
+	 * be applied to all tickets created by the ticket machines of the factory.
+	 *
+	 * @param format
+	 *            the format to use, not null
+	 * @see Ticket#toString()
+	 */
 
 	public void setFormat(TicketFormat format) {
 		if (format == null) throw new IllegalArgumentException("null format");
 		this.format = format;
 	}
+
+	/**
+	 * The format currently applied by the factory to the string encoding of its
+	 * tickets. If the {@link #setFormat(TicketFormat)} method has not
+	 * previously been called, this will be {@link TicketFormat#DEFAULT}
+	 *
+	 * @return the format used this ticket factory
+	 */
 
 	public TicketFormat getFormat() {
 		return format;
@@ -102,13 +149,47 @@ public class TicketFactory<R, D> {
 
 	// methods
 
+	/**
+	 * A ticket machine for the default origin. For the void origin type, this
+	 * is the only ticket machine. For factories which operate with an interface
+	 * defined origin type, this method will assume default values for all interface
+	 * methods.
+	 *
+	 * @return a ticket machine for the default origin.
+	 */
+
 	public TicketMachine<R, D> machine() {
 		return machineImpl(null);
 	}
 
+	/**
+	 * A ticket machine for the specified origin. The supplied origin must be
+	 * null or implement the origin type interface. In the case of a null
+	 * origin, this method will assume default values for all interface methods.
+	 *
+	 * @param origin
+	 *            the origin to be declared for the created tickets
+	 * @return a ticket machine for the specified origin.
+	 * @see TicketConfig#withOriginType(Class)
+	 */
+
 	public TicketMachine<R, D> machineForOrigin(R origin) {
 		return machineImpl(origin);
 	}
+
+	/**
+	 * A ticket machine for the origin as specified by the supplied values. This
+	 * method provides a convenient way to produce a ticket machine without
+	 * first creating an implementation of the origin type interface. Each value
+	 * supplied is assigned to the correspondingly indexed accessor on the
+	 * origin type interface (as per the {@link TicketField} annotation); any
+	 * null or absent value is assigned a default.
+	 *
+	 * @param origin
+	 *            the origin to be declared for the created tickets
+	 * @return a ticket machine for the specified origin.
+	 * @see TicketField
+	 */
 
 	public TicketMachine<R, D> machineForOriginValues(Object... originValues) {
 		if (originValues == null) throw new IllegalArgumentException("null originValues");
@@ -116,7 +197,21 @@ public class TicketFactory<R, D> {
 		return machineImpl(origin);
 	}
 
-	public Ticket<R, D> decodeTicket(String str) {
+	/**
+	 * Decodes a ticket that was previously encoded using the
+	 * {@link Ticket#toString()} method. To be valid ticket for this factory,
+	 * the encoded ticket must have been created with a compatible factory.
+	 *
+	 * @param str
+	 *            the string to be decoded
+	 * @return a ticket
+	 * @throws IllegalArgumentException
+	 *             if the supplied string is null or empty
+	 * @throws TicketException
+	 *             if the string did not specify a valid ticket
+	 */
+
+	public Ticket<R, D> decodeTicket(String str) throws TicketException {
 		// validate parameters
 		if (str == null) throw new IllegalArgumentException("null str");
 		int length = str.length();

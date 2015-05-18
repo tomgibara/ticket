@@ -18,9 +18,37 @@ package com.tomgibara.ticket;
 
 import com.tomgibara.bits.BitVector;
 
+/**
+ * <p>
+ * A ticket is a unique timestamped token. Tickets are initially created by
+ * {@link TicketMachine} instances. They are designed to be serialized into
+ * compact ASCII strings via their {@link #toString()} method from which they
+ * may be reconstructed by a {@link TicketFactory}.
+ * <p>
+ * In addition to a timestamp (of configurable granularity), a ticket can store
+ * application specific data which records information about the origin of the
+ * ticket (for example, which node generated the ticket in a distributed system)
+ * and ticket specific data (for example, the id of an associated session or
+ * transaction).
+ *
+ * @author Tom Gibara
+ *
+ * @param <R>
+ *            the type of origin information recorded
+ * @param <D>
+ *            the type of data information recorded
+ */
+
 public final class Ticket<R, D> {
 
 	// statics
+
+	/**
+	 * Controls the accuracy of ticket timestamps. Less granular timestamps have
+	 * the virtue of producing shorter tickets. Additional sequential numbering
+	 * ensures that all tickets with a given origin are uniquely identified,
+	 * irrespective of the granularity of their timestamps.
+	 */
 
 	//TODO consider supporting DAY
 	public enum Granularity {
@@ -69,21 +97,59 @@ public final class Ticket<R, D> {
 
 	// accessors
 
+	/**
+	 * The specification by which this ticket was constructed.
+	 *
+	 * @return the specification of this ticket
+	 */
+
 	public TicketSpec getSpecification() {
 		return spec;
 	}
+
+	/**
+	 * The time at which this ticket was originally created. The timestamp will
+	 * only be accurate to up to the specified granularity.
+	 *
+	 * @return
+	 * @see Granularity
+	 */
 
 	public long getTimestamp() {
 		return millis;
 	}
 
+	/**
+	 * The sequence number of the ticket. It forms a unique combination when
+	 * taken with the ticket origin and its timestamp.
+	 *
+	 * @return the sequence number
+	 */
+
 	public int getSequenceNumber() {
 		return seq;
 	}
 
+	/**
+	 * The origin of the ticket. This returns interface structured information
+	 * about the source of the ticket, or null in the case of the Void origin
+	 * type.
+	 *
+	 * @return the origin of the ticket, possibly null
+	 * @see TicketConfig#getOriginType()
+	 */
+
 	public R getOrigin() {
 		return origin;
 	}
+
+	/**
+	 * Information associated with this specific ticket, or null if the data
+	 * type is Void.
+	 *
+	 * @return data about the ticket, possibly null
+	 * @see TicketConfig#getDataType()
+	 */
 
 	public D getData() {
 		return data;
@@ -97,6 +163,12 @@ public final class Ticket<R, D> {
 		return bits.hashCode();
 	}
 
+	/**
+	 * Two tickets are equal if the information they encode is identical under a
+	 * shared specification. Note that equal tickets may have String forms which
+	 * differ in their formatting.
+	 */
+
 	@Override
 	public boolean equals(Object obj) {
 		if (obj == this) return true;
@@ -106,6 +178,15 @@ public final class Ticket<R, D> {
 		if (!this.spec.equals(that.spec)) return false;
 		return true;
 	}
+
+	/**
+	 * A compact ASCII encoding of the information recorded in this ticket. This
+	 * is the mechanism by which tickets are intended to be shared with users or
+	 * other system components.
+	 *
+	 * @return a compact ASCII string
+	 * @see TicketFormat
+	 */
 
 	@Override
 	public String toString() {

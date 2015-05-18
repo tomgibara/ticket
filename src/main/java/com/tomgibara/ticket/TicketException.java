@@ -16,6 +16,13 @@
  */
 package com.tomgibara.ticket;
 
+/**
+ * Instances of this class are thrown when a ticket cannot be decoded.
+ *
+ * @author Tom Gibara
+ * @see TicketFactory#decodeTicket(String)
+ */
+
 public class TicketException extends RuntimeException {
 
 	private static final long serialVersionUID = -504476966169351063L;

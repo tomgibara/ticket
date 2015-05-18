@@ -33,6 +33,7 @@ public class TicketMachine<R, D> {
 	private final Object lock = new Object();
 	private long seqTimestamp = 0L;
 	// set to the next sequence number
+	//TODO consider making long?
 	private int seqNumber = 0;
 
 	// constructors
