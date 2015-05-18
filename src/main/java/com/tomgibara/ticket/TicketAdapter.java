@@ -142,6 +142,7 @@ final class TicketAdapter<T> implements Serializable {
 		return Collections.unmodifiableMap(map);
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private static Map<Class<?>, Object> prepareEnumDefaults(Field[] fields) {
 		Map<Class<?>, Object> map = Collections.emptyMap();
 		for (Field field : fields) {
@@ -282,7 +283,7 @@ final class TicketAdapter<T> implements Serializable {
 		return count;
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	T read(CodedReader r) throws TicketException {
 		Object[] values = new Object[fields.length];
 		int count;
