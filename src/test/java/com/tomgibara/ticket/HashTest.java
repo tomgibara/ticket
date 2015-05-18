@@ -1,13 +1,25 @@
+/*
+ * Copyright 2015 Tom Gibara
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package com.tomgibara.ticket;
 
 import java.awt.Point;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.SortedSet;
 
 import junit.framework.TestCase;
@@ -31,13 +43,13 @@ public class HashTest extends TestCase {
 		digest2.update((byte)'b');
 		expect("54927ada38dd4928ba3bc8d40059dbe1ba68ed7f8e3a6fb3b41492f3", digest2); // "ab"
 	}
-	
+
 	private void expect(String expected, KeccakDigest digest) {
 		byte[] result = new byte[digest.getDigestSize()];
 		digest.doFinal(result, 0);
 		assertEquals(expected, new BigInteger(1, result).toString(16));
 	}
-	
+
 	public void testPrimitiveHashes() {
 		Class<?>[] classes = {
 				boolean.class,
