@@ -22,7 +22,22 @@ import com.tomgibara.bits.BitReader;
 import com.tomgibara.bits.BitVector;
 import com.tomgibara.bits.BitWriter;
 
+/**
+ * Controls the formatting of tickets created by a {@link TicketMachine}.
+ * <p>
+ * A ticket that is encoded using any format remains decodable by a compatibly
+ * configured factory, irrespective of the encoding used by the factory to
+ * create new tickets.
+ * <p>
+ * Instances of this class are safe for concurrent access by multiple threads.
+ *
+ * @author Tom Gibara
+ * @see TicketFactory#setFormat(TicketFormat)
+ */
+
 //TODO make serializable?
+//TODO reconsider having ticket character limit here
+//TODO implement object methods
 public class TicketFormat {
 
 	private static final char[] CHARS_L = {
@@ -48,6 +63,13 @@ public class TicketFormat {
 	private static final char PAD_CHAR_L = 'z';
 	private static final char PAD_CHAR_U = 'z';
 
+	/**
+	 * The format which will be applied by ticket factories if no format has
+	 * been specified.
+	 *
+	 * @see TicketFactory#getFormat()
+	 */
+
 	public static TicketFormat DEFAULT = new TicketFormat();
 
 	private final int ticketCharLimit;
@@ -62,6 +84,25 @@ public class TicketFormat {
 	private TicketFormat() {
 		this(256, false, 5, '-', true);
 	}
+
+	/**
+	 * Creates a new ticket format. See the corresponding accessors on this
+	 * class for a complete explanation of the parameters
+	 *
+	 * @param ticketCharLimit
+	 *            the maximum length of ticket that will be encoded or decoded
+	 * @param upperCase
+	 *            true if the tickets should be encoded using upper case
+	 *            characters, false if lower case characters should be used
+	 * @param charGroupLength
+	 *            the number of characters that are grouped for readability, 0
+	 *            to disable grouping
+	 * @param separatorChar
+	 *            the character used to separate groups
+	 * @param padGroups
+	 *            whether the ticket should be padded to a whole number of
+	 *            characters.
+	 */
 
 	public TicketFormat(int ticketCharLimit, boolean upperCase, int charGroupLength, char separatorChar, boolean padGroups) {
 		if (ticketCharLimit < 1) throw new IllegalArgumentException("Non-positive ticketCharLimit");
@@ -79,17 +120,48 @@ public class TicketFormat {
 		padChar = upperCase ? PAD_CHAR_U : PAD_CHAR_L;
 	}
 
+	/**
+	 * Attempts to encode or decode tickets who's string length exceeds this
+	 * value will fail with a {@link TicketException}.
+	 *
+	 * @return the limit in characters
+	 */
+
 	public int getTicketCharLimit() {
 		return ticketCharLimit;
 	}
+
+	/**
+	 * Whether tickets should be encoded using upper case characters. A value of
+	 * true indicates that upper case characters should be used. A value of
+	 * false indicates that lower case characters should be used.
+	 *
+	 * @return whether encoded tickets are upper case
+	 */
 
 	public boolean isUpperCase() {
 		return upperCase;
 	}
 
+	/**
+	 * For readability, the characters comprising an encoded ticket may be
+	 * separated into regularly sized groups. This value should be zero if
+	 * the characters should not be grouped.
+	 *
+	 * @return the group length or zero
+	 */
+
 	public int getCharGroupLength() {
 		return charGroupLength;
 	}
+
+	/**
+	 * The character used to separate regular sized groups of characters in a
+	 * ticket's encoding.
+	 *
+	 * @return the separation character
+	 * @see #getCharGroupLength()
+	 */
 
 	public char getSeparatorChar() {
 		return separatorChar;

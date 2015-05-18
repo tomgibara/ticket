@@ -30,6 +30,8 @@ import com.tomgibara.bits.BitVector;
  * ticket (for example, which node generated the ticket in a distributed system)
  * and ticket specific data (for example, the id of an associated session or
  * transaction).
+ * <p>
+ * Instances of this class are safe for concurrent access by multiple threads.
  *
  * @author Tom Gibara
  *

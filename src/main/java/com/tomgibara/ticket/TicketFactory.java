@@ -43,6 +43,8 @@ import com.tomgibara.coding.ExtendedCoding;
  * For this reason, ticket creation is delegated to {@link TicketMachine}
  * instances which operate on behalf of the factory, with each machine dedicated
  * to creating tickets for a single origin.
+ * <p>
+ * Instances of this class are safe for concurrent access by multiple threads.
  *
  * @author Tom Gibara
  *
@@ -57,6 +59,8 @@ import com.tomgibara.coding.ExtendedCoding;
 //NOTE it is a minor weakness of this design that the ticket must be parsed before the checksum can be validated
 //TODO support persistence of serial numbers by passing in interface during config
 //TODO consider allowing null specs to indicate that version cannot be used?
+//TODO consider adding 'self description' capability with a ticket inspection capability
+//TODO consider adding selective field encryption
 public class TicketFactory<R, D> {
 
 	// note, not configurable because we don't want to expose "bits" level abstractions

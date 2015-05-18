@@ -39,6 +39,8 @@ import java.util.List;
  * <p>
  * Note that this configuration does not control the formatting of tickets which
  * is controlled with {@link TicketFactory#setFormat(TicketFormat)}.
+ * <p>
+ * Instances of this class are safe for concurrent access by multiple threads.
  *
  * @author Tom Gibara
  *
@@ -142,6 +144,7 @@ public final class TicketConfig<R,D> implements Serializable {
 	 * @param originType
 	 *            <code>Void.class</code> or an interface
 	 * @return a new configuration or possibly the same
+	 * @see TicketField
 	 */
 
 	//TODO should return same instance if type is the same
@@ -160,6 +163,7 @@ public final class TicketConfig<R,D> implements Serializable {
 	 * @param dataType
 	 *            <code>Void.class</code> or an interface
 	 * @return a new configuration or possibly the same
+	 * @see TicketField
 	 */
 
 	//TODO should return same instance if type is the same
