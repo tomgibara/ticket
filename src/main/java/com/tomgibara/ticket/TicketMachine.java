@@ -99,7 +99,7 @@ public class TicketMachine<R, D> {
 		int padding = 4 - (length + 4) % 5;
 		length += writer.writeBooleans(false, padding);
 		BitVector bits = writer.toBitVector();
-		String string = factory.format.encode(bits);
+		String string = factory.format.encode(bits, factory.config.ticketCharLimit);
 		return new Ticket<R, D>(spec, bits, timestamp, seq, origin.origin, data, string);
 	}
 

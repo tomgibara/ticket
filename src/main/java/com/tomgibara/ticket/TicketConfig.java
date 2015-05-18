@@ -57,9 +57,11 @@ public final class TicketConfig<R,D> implements Serializable {
 
 	// statics constants
 
+	private static final int DEFAULT_TICKET_CHAR_LIMIT = 256;
 	private static final List<TicketSpec> DEFAULT_SPECS = Collections.singletonList( TicketSpec.getDefault() );
 	private static final TicketAdapter<Void> DEFAULT_ADAPTER = TicketAdapter.newData(Void.class);
-	private static final TicketConfig<Void,Void> DEFAULT = new TicketConfig<Void, Void>(DEFAULT_ADAPTER, DEFAULT_ADAPTER, DEFAULT_SPECS);
+	private static final TicketConfig<Void,Void> DEFAULT =
+			new TicketConfig<Void, Void>(DEFAULT_TICKET_CHAR_LIMIT, DEFAULT_ADAPTER, DEFAULT_ADAPTER, DEFAULT_SPECS);
 
 	// static methods
 
@@ -87,6 +89,7 @@ public final class TicketConfig<R,D> implements Serializable {
 
 	// fields
 
+	final int ticketCharLimit;
 	final TicketAdapter<R> originAdapter;
 	final TicketAdapter<D> dataAdapter;
 	final List<TicketSpec> specifications;
@@ -94,13 +97,25 @@ public final class TicketConfig<R,D> implements Serializable {
 
 	// constructors
 
-	private TicketConfig(TicketAdapter<R> originAdapter, TicketAdapter<D> dataAdapter, List<TicketSpec> specs) {
+	private TicketConfig(int ticketCharLimit, TicketAdapter<R> originAdapter, TicketAdapter<D> dataAdapter, List<TicketSpec> specs) {
+		this.ticketCharLimit = ticketCharLimit;
 		this.originAdapter = originAdapter;
 		this.dataAdapter = dataAdapter;
 		this.specifications = specs;
 	}
 
 	// accessors
+
+	/**
+	 * Attempts to encode or decode tickets who's string length exceeds this
+	 * value will fail with a {@link TicketException}.
+	 *
+	 * @return the limit in characters
+	 */
+
+	public int getTicketCharLimit() {
+		return ticketCharLimit;
+	}
 
 	/**
 	 * The type of origin data to be recorded in tickets.
@@ -134,6 +149,11 @@ public final class TicketConfig<R,D> implements Serializable {
 
 	// methods
 
+	public TicketConfig<R,D> withTicketCharLimit(int ticketCharLimit) {
+		if (ticketCharLimit < 1) throw new IllegalArgumentException("Non-positive ticketCharLimit");
+		return new TicketConfig<R, D>(ticketCharLimit, originAdapter, dataAdapter, specifications);
+	}
+
 	/**
 	 * <p>
 	 * Returns a configuration which is identical to the present configuration
@@ -147,10 +167,10 @@ public final class TicketConfig<R,D> implements Serializable {
 	 * @see TicketField
 	 */
 
-	//TODO should return same instance if type is the same
+	//TODO could return same instance if type is the same
 	public <S> TicketConfig<S,D> withOriginType(Class<? extends S> originType) {
 		if (originType == null) throw new IllegalArgumentException("null originType");
-		return new TicketConfig<S, D>(TicketAdapter.newData(originType), dataAdapter, specifications);
+		return new TicketConfig<S, D>(ticketCharLimit, TicketAdapter.newData(originType), dataAdapter, specifications);
 	}
 
 	/**
@@ -166,10 +186,10 @@ public final class TicketConfig<R,D> implements Serializable {
 	 * @see TicketField
 	 */
 
-	//TODO should return same instance if type is the same
+	//TODO could return same instance if type is the same
 	public <E> TicketConfig<R,E> withDataType(Class<? extends E> dataType) {
 		if (dataType == null) throw new IllegalArgumentException("null dataType");
-		return new TicketConfig<R,E>(originAdapter, TicketAdapter.newData(dataType), specifications);
+		return new TicketConfig<R,E>(ticketCharLimit, originAdapter, TicketAdapter.newData(dataType), specifications);
 	}
 
 	/**
@@ -196,7 +216,7 @@ public final class TicketConfig<R,D> implements Serializable {
 	 */
 
 	public TicketConfig<R,D> withSpecifications(TicketSpec... specs) {
-		return new TicketConfig<R,D>(originAdapter, dataAdapter, checkedSpecs(specs));
+		return new TicketConfig<R,D>(ticketCharLimit, originAdapter, dataAdapter, checkedSpecs(specs));
 	}
 
 	/**
@@ -228,7 +248,7 @@ public final class TicketConfig<R,D> implements Serializable {
 
 	@Override
 	public int hashCode() {
-		return specifications.hashCode() + originAdapter.hashCode() + 31 * dataAdapter.hashCode();
+		return ticketCharLimit + specifications.hashCode() + originAdapter.hashCode() + 31 * dataAdapter.hashCode();
 	}
 
 	@Override
@@ -236,6 +256,7 @@ public final class TicketConfig<R,D> implements Serializable {
 		if (obj == this) return true;
 		if (!(obj instanceof TicketConfig)) return false;
 		TicketConfig<?, ?> that = (TicketConfig<?, ?>) obj;
+		if (this.ticketCharLimit != that.ticketCharLimit) return false;
 		if (!this.originAdapter.equals(that.originAdapter)) return false;
 		if (!this.dataAdapter.equals(that.dataAdapter)) return false;
 		if (!this.specifications.equals(that.specifications)) return false;
@@ -244,8 +265,8 @@ public final class TicketConfig<R,D> implements Serializable {
 
 	public String toString() {
 		return String.format(
-				"originAdapter: %s, dataAdapter: %s, specifications: %s",
-				originAdapter, dataAdapter, specifications
+				"originAdapter: %s, dataAdapter: %s, specifications: %s, ticketCharLimit: %d",
+				originAdapter, dataAdapter, specifications, ticketCharLimit
 				);
 	}
 }

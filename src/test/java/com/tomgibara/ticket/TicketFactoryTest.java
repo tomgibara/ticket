@@ -65,6 +65,26 @@ public class TicketFactoryTest extends TestCase {
 		} while (System.currentTimeMillis() < finish);
 	}
 
+	public void testLengthLimit() {
+		TicketFactory<Void, Void> longFactory = TicketConfig.getDefault().newFactory();
+		TicketFactory<Void, Void> shortFactory = TicketConfig.getDefault().withTicketCharLimit(5).newFactory();
+
+		try {
+			Ticket<Void, Void> ticket = longFactory.machine().ticket();
+			shortFactory.decodeTicket(ticket.toString());
+			fail();
+		} catch (TicketException e) {
+			// expected
+		}
+
+		try {
+			shortFactory.machine().ticket();
+			fail();
+		} catch (TicketException e) {
+			// expected
+		}
+	}
+
 	interface LongOrigin {
 
 		@TicketField(0)

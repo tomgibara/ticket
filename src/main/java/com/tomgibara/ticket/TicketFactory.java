@@ -221,7 +221,7 @@ public class TicketFactory<R, D> {
 		int length = str.length();
 		if (length == 0) throw new IllegalArgumentException("empty str");
 		// decode string to bits
-		BitVector bits = format.decode(str);
+		BitVector bits = format.decode(str, config.ticketCharLimit);
 		int size = bits.size();
 		// read ticket data
 		TicketSpec spec;

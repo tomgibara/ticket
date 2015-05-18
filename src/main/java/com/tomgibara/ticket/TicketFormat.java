@@ -36,7 +36,6 @@ import com.tomgibara.bits.BitWriter;
  */
 
 //TODO make serializable?
-//TODO reconsider having ticket character limit here
 public final class TicketFormat {
 
 	// statics
@@ -71,11 +70,10 @@ public final class TicketFormat {
 	 * @see TicketFactory#getFormat()
 	 */
 
-	public static TicketFormat DEFAULT = new TicketFormat(256, false, 5, '-', true);
+	public static TicketFormat DEFAULT = new TicketFormat(false, 5, '-', true);
 
 	// fields
 
-	private final int ticketCharLimit;
 	private final boolean upperCase;
 	private final int charGroupLength;
 	private final char separatorChar;
@@ -105,13 +103,11 @@ public final class TicketFormat {
 	 *            characters.
 	 */
 
-	public TicketFormat(int ticketCharLimit, boolean upperCase, int charGroupLength, char separatorChar, boolean padGroups) {
-		if (ticketCharLimit < 1) throw new IllegalArgumentException("Non-positive ticketCharLimit");
+	public TicketFormat(boolean upperCase, int charGroupLength, char separatorChar, boolean padGroups) {
 		if (charGroupLength < 0) throw new IllegalArgumentException("Negative charGroupLength");
 		if (separatorChar < ' ' || separatorChar > '~') throw new IllegalArgumentException("Non-printable or non ASCII separatorChar");
 		if (BITS[separatorChar] != -1) throw new IllegalArgumentException("separatorChar used for ticket encoding");
 		separatorChar = upperCase ? Character.toUpperCase(separatorChar) : Character.toLowerCase(separatorChar);
-		this.ticketCharLimit = ticketCharLimit;
 		this.upperCase = upperCase;
 		this.charGroupLength = charGroupLength;
 		this.separatorChar = separatorChar;
@@ -122,17 +118,6 @@ public final class TicketFormat {
 	}
 
 	// accessors
-
-	/**
-	 * Attempts to encode or decode tickets who's string length exceeds this
-	 * value will fail with a {@link TicketException}.
-	 *
-	 * @return the limit in characters
-	 */
-
-	public int getTicketCharLimit() {
-		return ticketCharLimit;
-	}
 
 	/**
 	 * Whether tickets should be encoded using upper case characters. A value of
@@ -175,10 +160,9 @@ public final class TicketFormat {
 	@Override
 	public int hashCode() {
 		return
-				(ticketCharLimit     ) + 31 * (
 				(upperCase ? 0 : 1337) + 31 * (
 				(charGroupLength     ) + 31 * (
-				(separatorChar       ))));
+				(separatorChar       )));
 	}
 
 	@Override
@@ -186,7 +170,6 @@ public final class TicketFormat {
 		if (obj == this) return true;
 		if (!(obj instanceof TicketFormat)) return false;
 		TicketFormat that = (TicketFormat) obj;
-		if (this.ticketCharLimit != that.ticketCharLimit) return false;
 		if (this.upperCase != that.upperCase) return false;
 		if (this.charGroupLength != that.charGroupLength) return false;
 		if (this.separatorChar != that.separatorChar) return false;
@@ -196,20 +179,20 @@ public final class TicketFormat {
 	@Override
 	public String toString() {
 		return String.format(
-				"ticketCharLimit: %d, upperCase %s, charGroupLength: %d, separatorChar: %s",
-				ticketCharLimit, upperCase, charGroupLength, separatorChar
+				"upperCase %s, charGroupLength: %d, separatorChar: %s",
+				upperCase, charGroupLength, separatorChar
 				);
 	}
 
 	// package methods
 
-	String encode(BitVector bits) {
+	String encode(BitVector bits, int maxLength) {
 		int count = bits.size() / 5;
 		BitReader reader = bits.openReader();
 		StringBuilder sb;
 		if (charGroupLength == 0) {
 			// simpler case
-			checkTicketLength(count);
+			checkTicketLength(count, maxLength);
 			sb = new StringBuilder(count);
 			for (int i = 0; i < count; i++) {
 				sb.append(chars[reader.read(5)]);
@@ -219,6 +202,7 @@ public final class TicketFormat {
 			int sepCount = (count - 1) / charGroupLength;
 			int padCount = padGroups ? charGroupLength - 1 - (count + charGroupLength - 1) % charGroupLength : 0;
 			int length = count + sepCount + padCount;
+			checkTicketLength(length, maxLength);
 			sb = new StringBuilder(length);
 			for (int i = 0; i < count; i++) {
 				if (i > 0 && (i % charGroupLength) == 0) sb.append(separatorChar);
@@ -231,9 +215,9 @@ public final class TicketFormat {
 		return sb.toString();
 	}
 
-	BitVector decode(String str) {
+	BitVector decode(String str, int maxLength) {
 		int length = str.length();
-		checkTicketLength(length);
+		checkTicketLength(length, maxLength);
 		int count = 0;
 		for (int i = 0; i < length; i++) {
 			char c = str.charAt(i);
@@ -254,8 +238,8 @@ public final class TicketFormat {
 
 	// private utility methods
 
-	private void checkTicketLength(int length) {
-		if (length > ticketCharLimit) {
+	private void checkTicketLength(int length, int maxLength) {
+		if (length > maxLength) {
 			throw new TicketException("Ticket length exceeds configured maximum");
 		}
 	}
