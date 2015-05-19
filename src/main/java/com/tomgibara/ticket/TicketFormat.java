@@ -16,6 +16,7 @@
  */
 package com.tomgibara.ticket;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 import com.tomgibara.bits.BitReader;
@@ -35,10 +36,11 @@ import com.tomgibara.bits.BitWriter;
  * @see TicketFactory#setFormat(TicketFormat)
  */
 
-//TODO make serializable?
-public final class TicketFormat {
+public final class TicketFormat implements Serializable {
 
 	// statics
+
+	private static final long serialVersionUID = -353061830037002664L;
 
 	private static final char[] CHARS_L = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
@@ -83,6 +85,11 @@ public final class TicketFormat {
 	private final char padChar;
 
 	// constructors
+
+	private TicketFormat(Serial serial) {
+		// pass forward to standard constructor for validation
+		this(serial.upperCase, serial.charGroupLength, serial.separatorChar, serial.padGroups);
+	}
 
 	/**
 	 * Creates a new ticket format. See the corresponding accessors on this
@@ -160,9 +167,10 @@ public final class TicketFormat {
 	@Override
 	public int hashCode() {
 		return
-				(upperCase ? 0 : 1337) + 31 * (
-				(charGroupLength     ) + 31 * (
-				(separatorChar       )));
+				(upperCase ? 0 : 1337 ) + 31 * (
+				(charGroupLength      ) + 31 * (
+				(separatorChar        ) + 31 * (
+				(padGroups ? 0 : 1337 ) ) ) );
 	}
 
 	@Override
@@ -173,14 +181,15 @@ public final class TicketFormat {
 		if (this.upperCase != that.upperCase) return false;
 		if (this.charGroupLength != that.charGroupLength) return false;
 		if (this.separatorChar != that.separatorChar) return false;
+		if (this.padGroups != that.padGroups) return false;
 		return true;
 	}
 
 	@Override
 	public String toString() {
 		return String.format(
-				"upperCase %s, charGroupLength: %d, separatorChar: %s",
-				upperCase, charGroupLength, separatorChar
+				"upperCase: %s, charGroupLength: %d, separatorChar: %s, padGroups: %s",
+				upperCase, charGroupLength, separatorChar, padGroups
 				);
 	}
 
@@ -236,6 +245,13 @@ public final class TicketFormat {
 		return vector;
 	}
 
+	// serialization methods
+
+	private Object writeReplace() {
+		System.out.println("CALLED");
+		return new Serial(this);
+	}
+
 	// private utility methods
 
 	private void checkTicketLength(int length, int maxLength) {
@@ -244,4 +260,26 @@ public final class TicketFormat {
 		}
 	}
 
+	// inner classes
+
+	private static final class Serial implements Serializable {
+
+		private static final long serialVersionUID = -6235529982242159983L;
+
+		private final boolean upperCase;
+		private final int charGroupLength;
+		private final char separatorChar;
+		private final boolean padGroups;
+
+		public Serial(TicketFormat that) {
+			this.upperCase = that.upperCase;
+			this.charGroupLength = that.charGroupLength;
+			this.separatorChar = that.separatorChar;
+			this.padGroups = that.padGroups;
+		}
+
+		private Object readResolve() {
+			return new TicketFormat(this);
+		}
+	}
 }
