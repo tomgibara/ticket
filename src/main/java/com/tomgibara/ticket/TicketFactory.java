@@ -16,6 +16,7 @@
  */
 package com.tomgibara.ticket;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -245,12 +246,12 @@ public class TicketFactory<R, D> {
 			dataAdapter.read(r, false, values);
 			int sLength = r.readPositiveInt();
 			if (sLength > 0) {
+				// digest the prefix
+				BitVector digestBits = bits.rangeView(size - (int) reader.getPosition(), size);
+				byte[] digest = digest(number, digestBits.toByteArray());
 				// retrieve the secure bits
 				BitVector sBits = new BitVector(sLength);
 				sBits.readFrom(reader);
-				// digest the prefix
-				BitVector digestBits = bits.rangeView(0, (int) reader.getPosition());
-				byte[] digest = digest(number, digestBits.toByteArray());
 				// xor the digest with the secure bits and read
 				if (sLength > TicketFactory.DIGEST_SIZE) throw new TicketException("secret data too large");
 				sBits.xorVector(BitVector.fromByteArray(digest, sLength));

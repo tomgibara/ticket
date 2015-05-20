@@ -23,6 +23,8 @@ import java.util.Set;
 import junit.framework.TestCase;
 
 import com.tomgibara.ticket.Ticket.Granularity;
+import com.tomgibara.ticket.TicketFactoryTest.LongOrigin;
+import com.tomgibara.ticket.TicketFactoryTest.MySecretData;
 
 public class TicketFactoryTest extends TestCase {
 
@@ -316,5 +318,37 @@ public class TicketFactoryTest extends TestCase {
 		assertEquals(Env.INTEGRATION, ticket3.getOrigin().getEnv());
 	}
 
+	interface MySecretData {
+
+		@TicketField(0)
+		long getOpen();
+
+		@TicketField(value=1, secret=true)
+		long getSecret();
+
+	}
+
+	public void testSecretData() {
+		TicketSpec spec = TicketSpec.defaultBuilder().setHashLength(16).build();
+		TicketConfig<LongOrigin, MySecretData> config = TicketConfig.getDefault()
+				.withOriginType(LongOrigin.class)
+				.withDataType(MySecretData.class)
+				.withSpecifications();
+
+		TicketFactory<LongOrigin, MySecretData> good = config.newFactory(new byte[] {1});
+		Ticket<LongOrigin, MySecretData> ticket = good.machineForOriginValues(213L).ticketDataValues(432L, 24380L);
+
+		String str = ticket.toString();
+		Ticket<LongOrigin, MySecretData> result = good.decodeTicket(str);
+		assertEquals(ticket, result);
+
+		TicketFactory<LongOrigin, MySecretData> bad1 = config.newFactory(new byte[] {2});
+		try {
+			Ticket<LongOrigin, MySecretData> badResult = bad1.decodeTicket(str);
+			assertFalse(ticket.equals(badResult));
+		} catch (TicketException e) {
+			//expected since corrupted data may not parse
+		}
+	}
 
 }

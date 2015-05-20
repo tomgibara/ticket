@@ -16,6 +16,8 @@
  */
 package com.tomgibara.ticket;
 
+import java.util.Arrays;
+
 import com.tomgibara.bits.BitVector;
 import com.tomgibara.bits.BitVectorWriter;
 import com.tomgibara.coding.CodedWriter;
@@ -102,7 +104,8 @@ public class TicketMachine<R, D> {
 			BitVectorWriter sWriter = new BitVectorWriter();
 			CodedWriter sW = new CodedWriter(sWriter, TicketFactory.CODING);
 			adapter.write(sW, true, data);
-			BitVector sBits = sWriter.toBitVector();
+			//TODO make mutable getter available, at cost of 'killing' the writer
+			BitVector sBits = sWriter.toBitVector().mutableCopy();
 			// measure the bit vector and write out the length
 			int sLength = sBits.size();
 			if (sLength > TicketFactory.DIGEST_SIZE) throw new TicketException("secret data too large");
