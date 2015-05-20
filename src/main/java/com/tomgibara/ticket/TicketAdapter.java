@@ -42,6 +42,7 @@ final class TicketAdapter<T> implements Serializable {
 	private static final long serialVersionUID = 2192751899582213550L;
 
 	private static final Field[] NO_FIELDS = new Field[0];
+	private static final Object[] NO_VALUES = new Object[0];
 	private static final Object[] DEFAULTS = {
 		"",             (byte)0,        0.0f,           '\0',           (short)0,       null,           0L,             0,
 		null,           null,           null,           0.0,            false,          null,           null,           null,
@@ -119,7 +120,7 @@ final class TicketAdapter<T> implements Serializable {
 			} else if (clss != String.class && !clss.isPrimitive()) {
 				throw new IllegalArgumentException("Ticket method " + name + " has invalid type: " + clss.getName());
 			}
-			list.add( new Field(ann.value(), method) );
+			list.add( new Field(ann.value(), method, ann.secret()) );
 		}
 		if (list.isEmpty()) throw new IllegalArgumentException("No fields");
 		Collections.sort(list);
@@ -166,6 +167,18 @@ final class TicketAdapter<T> implements Serializable {
 		return map;
 	}
 
+	private static Object[] generateDefaults(Field[] fields) {
+		if (fields.length == 0) return NO_VALUES;
+		Map<Class<?>, Object> enumDefaults = prepareEnumDefaults(fields);
+		int length = fields.length;
+		Object[] defaults = new Object[length];
+		for (int i = 0; i < length; i++) {
+			Field field = fields[i];
+			defaults[i] = field.enumed ? enumDefaults.get(field.objType) : DEFAULTS[field.hash];
+		}
+		return defaults;
+	}
+
 	// package statics
 
 	static <T> TicketAdapter<T> newData(Class<? extends T> type) {
@@ -195,9 +208,14 @@ final class TicketAdapter<T> implements Serializable {
 
 	private final Class<? extends T> type;
 	private final Class<?> iface;
+
+	private final Class<?>[] ifaces;
+	private final Class<?> proxyClass;
 	private final Field[] fields;
+	private final Object[] defaults;
 	private final Map<Method, Integer> lookup;
-	private final Map<Class<?>, Object> enumDefaults;
+	private final Field[] openFields;
+	private final Field[] secretFields;
 
 	// constructors
 
@@ -205,9 +223,40 @@ final class TicketAdapter<T> implements Serializable {
 		this.type = type;
 		this.iface = iface;
 
-		this.fields = deriveFields(iface);
-		this.lookup = computeLookup(fields);
-		this.enumDefaults = prepareEnumDefaults(fields);
+		if (iface == null) {
+			ifaces = null;
+			proxyClass = null;
+		} else {
+			ifaces = new Class[] {iface};
+			proxyClass = Proxy.getProxyClass(iface.getClassLoader(), ifaces);
+		}
+		fields = deriveFields(iface);
+		defaults = generateDefaults(fields);
+		lookup = computeLookup(fields);
+
+		// finally, do the work of creating separate open/secret field arrays
+		// they will be needed if the adapter is called on to separate private fields
+		int openCount = 0;
+		int secretCount = 0;
+		for (Field field : fields) {
+			if (field.secret) {
+				secretCount ++;
+			} else {
+				openCount ++;
+			}
+		}
+		openFields = openCount == 0 ? NO_FIELDS : new Field[openCount];
+		secretFields = secretCount == 0 ? NO_FIELDS : new Field[secretCount];
+		int oi = 0;
+		int si = 0;
+		for (int i = 0; i < fields.length; i++) {
+			Field field = fields[i];
+			if (field.secret) {
+				secretFields[si++] = field;
+			} else {
+				openFields[oi++] = field;
+			}
+		}
 	}
 
 	// package accessors
@@ -220,10 +269,14 @@ final class TicketAdapter<T> implements Serializable {
 		return type;
 	}
 
+	boolean isSecretive() {
+		return secretFields.length > 0;
+	}
+
 	// package methods
 
 	//TODO consider caching adapted value of null - common case?
-	T adapt(Object... values) {
+	T defaultAndAdapt(Object... values) {
 		if (iface == null) {
 			if (values == null || values.length == 0) return null;
 			throw new IllegalArgumentException("values supplied for void");
@@ -242,14 +295,30 @@ final class TicketAdapter<T> implements Serializable {
 				}
 			}
 		}
-		return adaptImpl(checked, firstNull + 1);
+		for (int i = firstNull + 1; i < defaults.length; i++) {
+			checked[i] = defaults[i];
+		}
+		return adapt(checked);
 	}
 
-	int write(CodedWriter w, T value) throws TicketException {
-		if (value == null) return w.writePositiveInt(0);
+	// requires that values array is complete and null-free
+	@SuppressWarnings("unchecked")
+	T adapt(Object... values) {
+		if (iface == null) return null;
+		return (T) Proxy.newProxyInstance(iface.getClassLoader(), ifaces, new Handler(lookup, values));
+	}
 
+	Object[] unadapt(T value) {
+		//TODO if caller could promise not to modify the array, we could avoid this clone
+		if (value == null) return defaults.clone();
+		// pre-adapted case
+		if (value.getClass() == proxyClass) {
+			Handler handler = (Handler) Proxy.getInvocationHandler(value);
+			return handler.values.clone();
+		}
+		// general case
 		int length = fields.length;
-		int count = w.writePositiveInt(length);
+		Object[] values = new Object[length];
 		for (int i = 0; i < length; i++) {
 			Field field = fields[i];
 			Object obj;
@@ -260,39 +329,60 @@ final class TicketAdapter<T> implements Serializable {
 			} catch (InvocationTargetException e) {
 				throw new TicketException("Failed to access field " + field.name, e);
 			}
+			values[i] = obj == null ? defaults[i] : obj;
+		}
+		return values;
+	}
+
+	//TODO temporary
+	//remove when secrecy is supported
+	int write(CodedWriter w, boolean secret, T value) throws TicketException {
+		return write(w, secret, unadapt(value));
+	}
+
+	int write(CodedWriter w, boolean secret, Object... values) throws TicketException {
+		if (values.length != fields.length) throw new IllegalArgumentException();
+		Field[] fields = secret ? secretFields : openFields;
+		int length = fields.length;
+		int count = w.writePositiveInt(length);
+		for (int i = 0; i < length; i++) {
+			Field field = fields[i];
+			Object obj = values[field.index];
 			//note: this is possible if client generates ticket from own data impl
-			if (obj == null) { // null case
-				// must be an array or a string or an enum
-				// encode the equivalent of an empty string or array, or first enum
-				count += w.writePositiveInt(0);
-			} else switch (field.hash) {
-				case /*String*/   0: count += CodedStreams.writeString(w, (String) obj);    break;
-				case /*boolean*/ 12: count += w.getWriter().writeBoolean((Boolean) obj);    break;
-				case /*byte*/     1: count += w.writeInt((Byte) obj);                       break;
-				case /*short*/    4: count += w.writeInt((Short) obj);                      break;
-				case /*char*/     3: count += w.writePositiveInt((Character) obj);          break;
-				case /*int*/      7: count += w.writeInt((Integer) obj);                    break;
-				case /*float*/    2: count += w.writeFloat((Float) obj);                    break;
-				case /*long*/     6: count += w.writeLong((Long) obj);                      break;
-				case /*double*/  11: count += w.writeDouble((Double) obj);                  break;
-				case /*enum*/     5: count += CodedStreams.writeEnum(w, (Enum<?>) obj);     break;
-				case /*enum a.*/ 21: count += CodedStreams.writeEnumArray(w, (Enum[]) obj); break;
-				default /*array*/  : count += CodedStreams.writePrimitiveArray(w, obj);     break;
+			switch (field.hash) {
+			case /*String*/   0: count += CodedStreams.writeString(w, (String) obj);    break;
+			case /*boolean*/ 12: count += w.getWriter().writeBoolean((Boolean) obj);    break;
+			case /*byte*/     1: count += w.writeInt((Byte) obj);                       break;
+			case /*short*/    4: count += w.writeInt((Short) obj);                      break;
+			case /*char*/     3: count += w.writePositiveInt((Character) obj);          break;
+			case /*int*/      7: count += w.writeInt((Integer) obj);                    break;
+			case /*float*/    2: count += w.writeFloat((Float) obj);                    break;
+			case /*long*/     6: count += w.writeLong((Long) obj);                      break;
+			case /*double*/  11: count += w.writeDouble((Double) obj);                  break;
+			case /*enum*/     5: count += CodedStreams.writeEnum(w, (Enum<?>) obj);     break;
+			case /*enum a.*/ 21: count += CodedStreams.writeEnumArray(w, (Enum[]) obj); break;
+			default /*array*/  : count += CodedStreams.writePrimitiveArray(w, obj);     break;
 			}
 		}
 		return count;
 	}
 
+	T read(CodedReader r, boolean secret) throws TicketException {
+		Object[] values = unadapt(null);
+		read(r, secret, values);
+		return adapt(values);
+	}
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	T read(CodedReader r) throws TicketException {
-		Object[] values = new Object[fields.length];
+	void read(CodedReader r, boolean secret, Object... values) throws TicketException {
+		Field[] fields = secret ? secretFields : openFields;
 		int count;
 		try {
 			count = r.readPositiveInt();
 			if (count == 0) {
-				if (iface == null) return null;
+				if (iface == null) return;
 			} else if (count > fields.length) {
-				throw new TicketException("Too many data fields");
+				throw new TicketException("Too many data fields " + count + " " + fields.length);
 			} else {
 				for (int i = 0; i < count; i++) {
 					Field field = fields[i];
@@ -328,13 +418,12 @@ final class TicketAdapter<T> implements Serializable {
 
 					default            : throw new IllegalStateException();
 					}
-					values[i] = value;
+					values[field.index] = value;
 				}
 			}
 		} catch (BitStreamException e) {
 			throw new TicketException("Invalid ticket bits", e);
 		}
-		return adaptImpl(values, count);
 	}
 
 	// object methods
@@ -365,17 +454,6 @@ final class TicketAdapter<T> implements Serializable {
 
 	// private utility methods
 
-	@SuppressWarnings("unchecked")
-	private T adaptImpl(Object[] values, int firstNull) {
-		for (int i = firstNull; i < fields.length; i++) {
-			if (values[i] == null) {
-				Field field = fields[i];
-				values[i] = field.enumed ? enumDefaults.get(field.objType) : DEFAULTS[field.hash];
-			}
-		}
-		return (T) Proxy.newProxyInstance(iface.getClassLoader(), new Class[] {iface}, new Handler(lookup, values));
-	}
-
 	// inner classes
 
 	private final static class Field implements Comparable<Field> {
@@ -383,15 +461,17 @@ final class TicketAdapter<T> implements Serializable {
 		final int index;
 		final String name;
 		final Method getter;
+		final boolean secret;
 		final Class<?> objType;
 		final boolean string;
 		final boolean array;
 		final boolean enumed;
 		final int hash;
 
-		Field(int index, Method getter) {
+		Field(int index, Method getter, boolean secret) {
 			this.index = index;
 			this.getter = getter;
+			this.secret = secret;
 
 			name = fieldName(getter.getName());
 			Class<?> type = getter.getReturnType();
@@ -434,12 +514,15 @@ final class TicketAdapter<T> implements Serializable {
 			if (obj == this) return true;
 			if (!(obj instanceof Field)) return false;
 			Field that = (Field) obj;
-			return this.index == that.index && this.getter == that.getter;
+			return
+					this.index == that.index &&
+					this.getter == that.getter &&
+					this.secret == that.secret;
 		}
 
 		@Override
 		public int hashCode() {
-			return index ^ getter.hashCode();
+			return index ^ getter.hashCode() ^ Boolean.valueOf(secret).hashCode();
 		}
 	}
 

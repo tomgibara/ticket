@@ -167,10 +167,13 @@ public final class TicketConfig<R,D> implements Serializable {
 	 * @see TicketField
 	 */
 
-	//TODO could return same instance if type is the same
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public <S> TicketConfig<S,D> withOriginType(Class<? extends S> originType) {
 		if (originType == null) throw new IllegalArgumentException("null originType");
-		return new TicketConfig<S, D>(ticketCharLimit, TicketAdapter.newData(originType), dataAdapter, specifications);
+		if (originType == originAdapter.getType()) return (TicketConfig) this;
+		TicketAdapter<S> adapter = TicketAdapter.newData(originType);
+		if (adapter.isSecretive()) throw new IllegalArgumentException("originType contains secret fields");
+		return new TicketConfig<S, D>(ticketCharLimit, adapter, dataAdapter, specifications);
 	}
 
 	/**
@@ -186,9 +189,10 @@ public final class TicketConfig<R,D> implements Serializable {
 	 * @see TicketField
 	 */
 
-	//TODO could return same instance if type is the same
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public <E> TicketConfig<R,E> withDataType(Class<? extends E> dataType) {
 		if (dataType == null) throw new IllegalArgumentException("null dataType");
+		if (dataType == dataAdapter.getType()) return (TicketConfig) this;
 		return new TicketConfig<R,E>(ticketCharLimit, originAdapter, TicketAdapter.newData(dataType), specifications);
 	}
 

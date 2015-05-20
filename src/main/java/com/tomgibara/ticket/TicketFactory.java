@@ -60,7 +60,6 @@ import com.tomgibara.coding.ExtendedCoding;
 //TODO support persistence of serial numbers by passing in interface during config
 //TODO consider allowing null specs to indicate that version cannot be used?
 //TODO consider adding 'self description' capability with a ticket inspection capability
-//TODO consider adding selective field encryption
 public class TicketFactory<R, D> {
 
 	// note, not configurable because we don't want to expose "bits" level abstractions
@@ -197,7 +196,7 @@ public class TicketFactory<R, D> {
 
 	public TicketMachine<R, D> machineForOriginValues(Object... originValues) {
 		if (originValues == null) throw new IllegalArgumentException("null originValues");
-		R origin = config.originAdapter.adapt(originValues);
+		R origin = config.originAdapter.defaultAndAdapt(originValues);
 		return machineImpl(origin);
 	}
 
@@ -239,8 +238,26 @@ public class TicketFactory<R, D> {
 			spec = specs[number];
 			timestamp = r.readPositiveLong();
 			seq = r.readPositiveInt();
-			origin = config.originAdapter.read(r);
-			data = config.dataAdapter.read(r);
+			TicketAdapter<R> originAdapter = config.originAdapter;
+			TicketAdapter<D> dataAdapter = config.dataAdapter;
+			origin = originAdapter.read(r, false);
+			Object[] values = dataAdapter.unadapt(null);
+			dataAdapter.read(r, false, values);
+			int sLength = r.readPositiveInt();
+			if (sLength > 0) {
+				// retrieve the secure bits
+				BitVector sBits = new BitVector(sLength);
+				sBits.readFrom(reader);
+				// digest the prefix
+				BitVector digestBits = bits.rangeView(0, (int) reader.getPosition());
+				byte[] digest = digest(number, digestBits.toByteArray());
+				// xor the digest with the secure bits and read
+				if (sLength > TicketFactory.DIGEST_SIZE) throw new TicketException("secret data too large");
+				sBits.xorVector(BitVector.fromByteArray(digest, sLength));
+				CodedReader sR = new CodedReader(sBits.openReader(), CODING);
+				dataAdapter.read(sR, true, values);
+			}
+			data = dataAdapter.adapt(values);
 			// check for valid hash
 			int position = (int) reader.getPosition();
 			BitVector expectedHash = spec.hash(digests[number], bits.rangeView(size - position, size));
@@ -263,6 +280,16 @@ public class TicketFactory<R, D> {
 			throw new TicketException("Invalid ticket bits", e);
 		}
 		return new Ticket<R, D>(spec, bits, timestamp, seq, origin, data, str);
+	}
+
+	// package methods
+
+	byte[] digest(int specNumber, byte[] bytes) {
+		KeccakDigest digest = new KeccakDigest(digests[specNumber]);
+		digest.update(bytes, 0, bytes.length);
+		byte[] out = new byte[digest.getDigestSize()];
+		digest.doFinal(out, 0);
+		return out;
 	}
 
 	// private helper methods
@@ -289,7 +316,7 @@ public class TicketFactory<R, D> {
 	private TicketOrigin<R> newOrigin(int specNumber, R origin) {
 		BitVectorWriter writer = new BitVectorWriter();
 		CodedWriter w = new CodedWriter(writer, TicketFactory.CODING);
-		config.originAdapter.write(w, origin);
+		config.originAdapter.write(w, false, origin);
 		return new TicketOrigin<R>(specNumber, writer.toBitVector(), origin);
 	}
 

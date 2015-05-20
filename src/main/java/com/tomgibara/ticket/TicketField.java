@@ -67,4 +67,5 @@ public @interface TicketField {
 
 	int value();
 
+	boolean secret() default false;
 }

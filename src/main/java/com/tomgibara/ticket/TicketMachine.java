@@ -71,7 +71,7 @@ public class TicketMachine<R, D> {
 	}
 
 	public Ticket<R, D> ticketDataValues(Object... dataValues) throws TicketException {
-		return ticketData(factory.config.dataAdapter.adapt(dataValues));
+		return ticketData(factory.config.dataAdapter.defaultAndAdapt(dataValues));
 	}
 
 	public Ticket<R, D> ticketData(D data) throws TicketException {
@@ -94,7 +94,31 @@ public class TicketMachine<R, D> {
 		length += w.writePositiveLong(timestamp);
 		length += w.writePositiveInt(seq);
 		length += origin.originBits.writeTo(writer);
-		length += factory.config.dataAdapter.write(w, data);
+		TicketAdapter<D> adapter = factory.config.dataAdapter;
+		length += adapter.write(w, false, data);
+		if (adapter.isSecretive()) {
+			// xor extract bytes, digest with secret bits and write out
+			// start by writing the secret fields into a bit vector
+			BitVectorWriter sWriter = new BitVectorWriter();
+			CodedWriter sW = new CodedWriter(sWriter, TicketFactory.CODING);
+			adapter.write(sW, true, data);
+			BitVector sBits = sWriter.toBitVector();
+			// measure the bit vector and write out the length
+			int sLength = sBits.size();
+			if (sLength > TicketFactory.DIGEST_SIZE) throw new TicketException("secret data too large");
+			length += w.writePositiveInt(sLength);
+			// now digest this prefix
+			// Note: flushing not currently necessary when writing to BitVectors
+			// but in case this changes in the future
+			writer.flush();
+			byte[] digest = factory.digest(number, writer.toBitVector().toByteArray());
+			// xor the digest with the bits and write to the ticket
+			sBits.xorVector(BitVector.fromByteArray(digest, sLength));
+			length += sBits.writeTo(writer);
+		} else {
+			// no encrypted bits
+			length += w.writePositiveInt(0);
+		}
 		length += spec.writeHash(factory.digests[number], writer);
 		int padding = 4 - (length + 4) % 5;
 		length += writer.writeBooleans(false, padding);
