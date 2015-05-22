@@ -16,6 +16,7 @@
  */
 package com.tomgibara.ticket;
 
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -100,6 +101,7 @@ public class TicketFactory<R, D> {
 	final TicketSpec[] specs;
 	final KeccakDigest[] digests;
 	final int primarySpecIndex;
+	final SecureRandom random;
 	volatile TicketFormat format = TicketFormat.DEFAULT;
 
 	private final Map<TicketOrigin<R>, TicketMachine<R,D>> machines = new HashMap<TicketOrigin<R>, TicketMachine<R,D>>();
@@ -110,6 +112,8 @@ public class TicketFactory<R, D> {
 		specs = (TicketSpec[]) list.toArray(new TicketSpec[list.size()]);
 		digests = createDigests(specs, secrets);
 		primarySpecIndex = specs.length - 1;
+		// we only need a random if we are creating secured ticket fields
+		random = config.dataAdapter.isSecretive() ? new SecureRandom() : null;
 	}
 
 	// accessors
@@ -244,19 +248,26 @@ public class TicketFactory<R, D> {
 			origin = originAdapter.read(r, false);
 			Object[] values = dataAdapter.unadapt(null);
 			dataAdapter.read(r, false, values);
+			int sPosition = (int) reader.getPosition();
 			int sLength = r.readPositiveInt();
 			if (sLength > 0) {
 				// digest the prefix
-				BitVector digestBits = bits.rangeView(size - (int) reader.getPosition(), size);
+				BitVector digestBits = bits.rangeView(size - sPosition, size);
 				byte[] digest = digest(number, digestBits.toByteArray());
 				// retrieve the secure bits
 				BitVector sBits = new BitVector(sLength);
 				sBits.readFrom(reader);
 				// xor the digest with the secure bits and read
-				if (sLength > TicketFactory.DIGEST_SIZE) throw new TicketException("secret data too large");
+				checkSecretLength(sLength);
 				sBits.xorVector(BitVector.fromByteArray(digest, sLength));
-				CodedReader sR = new CodedReader(sBits.openReader(), CODING);
+				BitReader sReader = sBits.openReader();
+				CodedReader sR = new CodedReader(sReader, CODING);
 				dataAdapter.read(sR, true, values);
+				sR.readPositiveLong(); // read the nonce
+				// sBits should be exhausted
+				if ((int) sReader.getPosition() != sLength) {
+					throw new TicketException("Extra secure bits");
+				}
 			}
 			data = dataAdapter.adapt(values);
 			// check for valid hash
@@ -291,6 +302,10 @@ public class TicketFactory<R, D> {
 		byte[] out = new byte[digest.getDigestSize()];
 		digest.doFinal(out, 0);
 		return out;
+	}
+
+	void checkSecretLength(int sLength) {
+		if (sLength > TicketFactory.DIGEST_SIZE - 64) throw new TicketException("secret data too large");
 	}
 
 	// private helper methods

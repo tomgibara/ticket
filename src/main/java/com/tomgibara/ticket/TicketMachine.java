@@ -16,13 +16,36 @@
  */
 package com.tomgibara.ticket;
 
-import java.util.Arrays;
+import java.util.Random;
 
 import com.tomgibara.bits.BitVector;
 import com.tomgibara.bits.BitVectorWriter;
 import com.tomgibara.coding.CodedWriter;
 
 public class TicketMachine<R, D> {
+
+	// statics
+
+	private static long bytesToLong(byte[] bytes, int i) {
+		return
+				( (long)  bytes[i + 0]         << 56) |
+				( (long) (bytes[i + 1] & 0xff) << 48) |
+				( (long) (bytes[i + 2] & 0xff) << 40) |
+				( (long) (bytes[i + 3] & 0xff) << 32) |
+				( (long) (bytes[i + 4] & 0xff) << 24) |
+				(        (bytes[i + 5] & 0xff) << 16) |
+				(        (bytes[i + 6] & 0xff) <<  8) |
+				(        (bytes[i + 7] & 0xff) <<  0);
+	}
+
+	private static long generateNonce(byte[] digest) {
+		long seed = bytesToLong(digest, digest.length - 8);
+		Random random = new Random(seed);
+		int count = 16 + random.nextInt(16);
+		int bits = random.nextInt();
+		long bit = 1L << count;
+		return bit | bits & bit - 1L;
+	}
 
 	// fields
 
@@ -99,22 +122,25 @@ public class TicketMachine<R, D> {
 		TicketAdapter<D> adapter = factory.config.dataAdapter;
 		length += adapter.write(w, false, data);
 		if (adapter.isSecretive()) {
+			// digest this prefix
+			// Note: flushing not currently necessary when writing to BitVectors
+			// but in case this changes in the future
+			writer.flush();
+			byte[] digest = factory.digest(number, writer.toBitVector().toByteArray());
 			// xor extract bytes, digest with secret bits and write out
 			// start by writing the secret fields into a bit vector
 			BitVectorWriter sWriter = new BitVectorWriter();
 			CodedWriter sW = new CodedWriter(sWriter, TicketFactory.CODING);
 			adapter.write(sW, true, data);
+			// add a nonce between 16 and 32 bits to avoid deducing information from the secret length
+			// we compute this from the 64 MSB bits which we reserve from the digest.
+			sW.writePositiveLong( generateNonce(digest) );
 			//TODO make mutable getter available, at cost of 'killing' the writer
 			BitVector sBits = sWriter.toBitVector().mutableCopy();
 			// measure the bit vector and write out the length
 			int sLength = sBits.size();
-			if (sLength > TicketFactory.DIGEST_SIZE) throw new TicketException("secret data too large");
+			factory.checkSecretLength(sLength);
 			length += w.writePositiveInt(sLength);
-			// now digest this prefix
-			// Note: flushing not currently necessary when writing to BitVectors
-			// but in case this changes in the future
-			writer.flush();
-			byte[] digest = factory.digest(number, writer.toBitVector().toByteArray());
 			// xor the digest with the bits and write to the ticket
 			sBits.xorVector(BitVector.fromByteArray(digest, sLength));
 			length += sBits.writeTo(writer);
