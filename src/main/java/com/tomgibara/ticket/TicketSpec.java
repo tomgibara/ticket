@@ -220,7 +220,7 @@ public final class TicketSpec implements Serializable {
 	}
 
 	int writeHash(KeccakDigest digest, BitVectorWriter writer) {
-		return state.hashLength == 0 ? 0 : hash(digest, writer.toBitVector()).writeTo(writer);
+		return state.hashLength == 0 ? 0 : hash(digest, writer.toImmutableBitVector()).writeTo(writer);
 	}
 
 	BitVector hash(KeccakDigest digest, BitVector vector) {

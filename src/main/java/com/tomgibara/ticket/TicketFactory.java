@@ -333,7 +333,7 @@ public class TicketFactory<R, D> {
 		BitVectorWriter writer = new BitVectorWriter();
 		CodedWriter w = new CodedWriter(writer, TicketFactory.CODING);
 		config.originAdapter.write(w, false, origin);
-		return new TicketOrigin<R>(specNumber, writer.toBitVector(), origin);
+		return new TicketOrigin<R>(specNumber, writer.toImmutableBitVector(), origin);
 	}
 
 }

@@ -126,7 +126,7 @@ public class TicketMachine<R, D> {
 			// Note: flushing not currently necessary when writing to BitVectors
 			// but in case this changes in the future
 			writer.flush();
-			byte[] digest = factory.digest(number, writer.toBitVector().toByteArray());
+			byte[] digest = factory.digest(number, writer.toImmutableBitVector().toByteArray());
 			// xor extract bytes, digest with secret bits and write out
 			// start by writing the secret fields into a bit vector
 			BitVectorWriter sWriter = new BitVectorWriter();
@@ -136,7 +136,7 @@ public class TicketMachine<R, D> {
 			// we compute this from the 64 MSB bits which we reserve from the digest.
 			sW.writePositiveLong( generateNonce(digest) );
 			//TODO make mutable getter available, at cost of 'killing' the writer
-			BitVector sBits = sWriter.toBitVector().mutableCopy();
+			BitVector sBits = sWriter.toMutableBitVector();
 			// measure the bit vector and write out the length
 			int sLength = sBits.size();
 			factory.checkSecretLength(sLength);
@@ -151,7 +151,7 @@ public class TicketMachine<R, D> {
 		length += spec.writeHash(factory.digests[number], writer);
 		int padding = 4 - (length + 4) % 5;
 		length += writer.writeBooleans(false, padding);
-		BitVector bits = writer.toBitVector();
+		BitVector bits = writer.toImmutableBitVector();
 		String string = factory.format.encode(bits, factory.config.ticketCharLimit);
 		return new Ticket<R, D>(spec, bits, timestamp, seq, origin.origin, data, string);
 	}
