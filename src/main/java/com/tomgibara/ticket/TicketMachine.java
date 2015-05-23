@@ -53,6 +53,7 @@ public class TicketMachine<R, D> {
 	private final TicketOrigin<R> origin;
 	private final TicketSpec spec;
 
+	private final boolean hasSecret;
 	// would be nice to use an AtomicInteger
 	// but we need to operate over two values synchronously
 	private final Object lock = new Object();
@@ -67,6 +68,8 @@ public class TicketMachine<R, D> {
 		this.factory = factory;
 		this.origin = origin;
 		spec = factory.specs[origin.specNumber];
+		TicketConfig<R, D> config = factory.config;
+		hasSecret = config.originAdapter.isSecretive() || config.dataAdapter.isSecretive();
 	}
 
 	// accessors
@@ -92,14 +95,21 @@ public class TicketMachine<R, D> {
 	}
 
 	public Ticket<R, D> ticket() throws TicketException {
-		return ticketData(null);
-	}
-
-	public Ticket<R, D> ticketDataValues(Object... dataValues) throws TicketException {
-		return ticketData(factory.config.dataAdapter.defaultAndAdapt(dataValues));
+		return ticketImpl( factory.config.dataAdapter.unadapt(null) );
 	}
 
 	public Ticket<R, D> ticketData(D data) throws TicketException {
+		return ticketImpl( factory.config.dataAdapter.unadapt(data) );
+	}
+
+	public Ticket<R, D> ticketDataValues(Object... dataValues) throws TicketException {
+		if (dataValues == null) throw new IllegalArgumentException("null dataValues");
+		return ticketImpl( factory.config.dataAdapter.defaultValues(dataValues) );
+	}
+
+	private Ticket<R, D> ticketImpl(Object... dataValues) throws TicketException {
+		TicketAdapter<D> dataAdapter = factory.config.dataAdapter;
+		D data = dataAdapter.adapt(dataValues);
 		BitVectorWriter writer = new BitVectorWriter();
 		CodedWriter w = new CodedWriter(writer, TicketFactory.CODING);
 		int number = origin.specNumber;
@@ -118,10 +128,9 @@ public class TicketMachine<R, D> {
 		length += w.writePositiveInt(number);
 		length += w.writePositiveLong(timestamp);
 		length += w.writePositiveInt(seq);
-		length += origin.originBits.writeTo(writer);
-		TicketAdapter<D> adapter = factory.config.dataAdapter;
-		length += adapter.write(w, false, data);
-		if (adapter.isSecretive()) {
+		length += origin.openOriginBits.writeTo(writer);
+		length += dataAdapter.write(w, false, dataValues);
+		if (hasSecret) {
 			// digest this prefix
 			// Note: flushing not currently necessary when writing to BitVectors
 			// but in case this changes in the future
@@ -131,11 +140,11 @@ public class TicketMachine<R, D> {
 			// start by writing the secret fields into a bit vector
 			BitVectorWriter sWriter = new BitVectorWriter();
 			CodedWriter sW = new CodedWriter(sWriter, TicketFactory.CODING);
-			adapter.write(sW, true, data);
+			factory.config.originAdapter.write(sW, true, origin.values);
+			dataAdapter.write(sW, true, dataValues);
 			// add a nonce between 16 and 32 bits to avoid deducing information from the secret length
 			// we compute this from the 64 MSB bits which we reserve from the digest.
 			sW.writePositiveLong( generateNonce(digest) );
-			//TODO make mutable getter available, at cost of 'killing' the writer
 			BitVector sBits = sWriter.toMutableBitVector();
 			// measure the bit vector and write out the length
 			int sLength = sBits.size();

@@ -275,12 +275,8 @@ final class TicketAdapter<T> implements Serializable {
 
 	// package methods
 
-	//TODO consider caching adapted value of null - common case?
-	T defaultAndAdapt(Object... values) {
-		if (iface == null) {
-			if (values == null || values.length == 0) return null;
-			throw new IllegalArgumentException("values supplied for void");
-		}
+	Object[] defaultValues(Object... values) {
+		if (values == null || values.length == 0) return defaults.clone();
 		Object[] checked = new Object[fields.length];
 		int firstNull = -1;
 		if (values != null) {
@@ -298,7 +294,7 @@ final class TicketAdapter<T> implements Serializable {
 		for (int i = firstNull + 1; i < defaults.length; i++) {
 			checked[i] = defaults[i];
 		}
-		return adapt(checked);
+		return checked;
 	}
 
 	// requires that values array is complete and null-free
@@ -309,7 +305,6 @@ final class TicketAdapter<T> implements Serializable {
 	}
 
 	Object[] unadapt(T value) {
-		//TODO if caller could promise not to modify the array, we could avoid this clone
 		if (value == null) return defaults.clone();
 		// pre-adapted case
 		if (value.getClass() == proxyClass) {
@@ -332,12 +327,6 @@ final class TicketAdapter<T> implements Serializable {
 			values[i] = obj == null ? defaults[i] : obj;
 		}
 		return values;
-	}
-
-	//TODO temporary
-	//remove when secrecy is supported
-	int write(CodedWriter w, boolean secret, T value) throws TicketException {
-		return write(w, secret, unadapt(value));
 	}
 
 	int write(CodedWriter w, boolean secret, Object... values) throws TicketException {

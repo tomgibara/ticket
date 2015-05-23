@@ -172,7 +172,6 @@ public final class TicketConfig<R,D> implements Serializable {
 		if (originType == null) throw new IllegalArgumentException("null originType");
 		if (originType == originAdapter.getType()) return (TicketConfig) this;
 		TicketAdapter<S> adapter = TicketAdapter.newData(originType);
-		if (adapter.isSecretive()) throw new IllegalArgumentException("originType contains secret fields");
 		return new TicketConfig<S, D>(ticketCharLimit, adapter, dataAdapter, specifications);
 	}
 

@@ -329,7 +329,6 @@ public class TicketFactoryTest extends TestCase {
 	}
 
 	public void testSecretData() {
-		TicketSpec spec = TicketSpec.defaultBuilder().setHashLength(16).build();
 		TicketConfig<LongOrigin, MySecretData> config = TicketConfig.getDefault()
 				.withOriginType(LongOrigin.class)
 				.withDataType(MySecretData.class)
@@ -345,6 +344,37 @@ public class TicketFactoryTest extends TestCase {
 		TicketFactory<LongOrigin, MySecretData> bad1 = config.newFactory(new byte[] {2});
 		try {
 			Ticket<LongOrigin, MySecretData> badResult = bad1.decodeTicket(str);
+			assertFalse(ticket.equals(badResult));
+		} catch (TicketException e) {
+			//expected since corrupted data may not parse
+		}
+	}
+
+	interface MySecretOrigin {
+
+		@TicketField(0)
+		long getOpen();
+
+		@TicketField(value=1, secret=true)
+		long getSecret();
+
+	}
+
+	public void testSecretOrigin() {
+		TicketConfig<MySecretOrigin, Void> config = TicketConfig.getDefault()
+				.withOriginType(MySecretOrigin.class)
+				.withSpecifications();
+
+		TicketFactory<MySecretOrigin, Void> good = config.newFactory(new byte[] {1});
+		Ticket<MySecretOrigin, Void> ticket = good.machineForOriginValues(432L, 24380L).ticket();
+
+		String str = ticket.toString();
+		Ticket<MySecretOrigin, Void> result = good.decodeTicket(str);
+		assertEquals(ticket, result);
+
+		TicketFactory<MySecretOrigin, Void> bad1 = config.newFactory(new byte[] {2});
+		try {
+			Ticket<MySecretOrigin, Void> badResult = bad1.decodeTicket(str);
 			assertFalse(ticket.equals(badResult));
 		} catch (TicketException e) {
 			//expected since corrupted data may not parse

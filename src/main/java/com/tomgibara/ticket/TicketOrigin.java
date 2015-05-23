@@ -21,18 +21,20 @@ import com.tomgibara.bits.BitVector;
 final class TicketOrigin<R> {
 
 	final int specNumber;
-	final BitVector originBits;
+	final BitVector openOriginBits;
 	final R origin;
+	final Object[] values;
 
-	TicketOrigin(int specNumber, BitVector originBits, R origin) {
+	TicketOrigin(int specNumber, BitVector openOriginBits, R origin, Object... values) {
 		this.specNumber = specNumber;
-		this.originBits = originBits;
+		this.openOriginBits = openOriginBits;
 		this.origin = origin;
+		this.values = values;
 	}
 
 	@Override
 	public int hashCode() {
-		return specNumber + originBits.hashCode();
+		return specNumber + openOriginBits.hashCode();
 	}
 
 	@Override
@@ -41,7 +43,7 @@ final class TicketOrigin<R> {
 		if (!(obj instanceof TicketOrigin)) return false;
 		TicketOrigin<?> that = (TicketOrigin<?>) obj;
 		if (this.specNumber != that.specNumber) return false;
-		if (!this.originBits.equals(that.originBits)) return false;
+		if (!this.openOriginBits.equals(that.openOriginBits)) return false;
 		return true;
 	}
 }

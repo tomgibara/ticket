@@ -167,7 +167,7 @@ public class TicketFactory<R, D> {
 	 */
 
 	public TicketMachine<R, D> machine() {
-		return machineImpl(null);
+		return machineImpl( config.originAdapter.unadapt(null) );
 	}
 
 	/**
@@ -182,7 +182,7 @@ public class TicketFactory<R, D> {
 	 */
 
 	public TicketMachine<R, D> machineForOrigin(R origin) {
-		return machineImpl(origin);
+		return machineImpl( config.originAdapter.unadapt(origin) );
 	}
 
 	/**
@@ -201,8 +201,7 @@ public class TicketFactory<R, D> {
 
 	public TicketMachine<R, D> machineForOriginValues(Object... originValues) {
 		if (originValues == null) throw new IllegalArgumentException("null originValues");
-		R origin = config.originAdapter.defaultAndAdapt(originValues);
-		return machineImpl(origin);
+		return machineImpl( config.originAdapter.defaultValues( originValues ) );
 	}
 
 	/**
@@ -245,9 +244,10 @@ public class TicketFactory<R, D> {
 			seq = r.readPositiveInt();
 			TicketAdapter<R> originAdapter = config.originAdapter;
 			TicketAdapter<D> dataAdapter = config.dataAdapter;
-			origin = originAdapter.read(r, false);
-			Object[] values = dataAdapter.unadapt(null);
-			dataAdapter.read(r, false, values);
+			Object[] originValues = originAdapter.unadapt(null);
+			Object[] dataValues = dataAdapter.unadapt(null);
+			originAdapter.read(r, false, originValues);
+			dataAdapter.read(r, false, dataValues);
 			int sPosition = (int) reader.getPosition();
 			int sLength = r.readPositiveInt();
 			if (sLength > 0) {
@@ -262,14 +262,16 @@ public class TicketFactory<R, D> {
 				sBits.xorVector(BitVector.fromByteArray(digest, sLength));
 				BitReader sReader = sBits.openReader();
 				CodedReader sR = new CodedReader(sReader, CODING);
-				dataAdapter.read(sR, true, values);
+				originAdapter.read(sR, true, originValues);
+				dataAdapter.read(sR, true, dataValues);
 				sR.readPositiveLong(); // read the nonce
 				// sBits should be exhausted
 				if ((int) sReader.getPosition() != sLength) {
 					throw new TicketException("Extra secure bits");
 				}
 			}
-			data = dataAdapter.adapt(values);
+			origin = originAdapter.adapt(originValues);
+			data = dataAdapter.adapt(dataValues);
 			// check for valid hash
 			int position = (int) reader.getPosition();
 			BitVector expectedHash = spec.hash(digests[number], bits.rangeView(size - position, size));
@@ -310,8 +312,8 @@ public class TicketFactory<R, D> {
 
 	// private helper methods
 
-	private TicketMachine<R, D> machineImpl(R origin) {
-		TicketOrigin<R> key = newOrigin(primarySpecIndex, origin);
+	private TicketMachine<R, D> machineImpl(Object... values) {
+		TicketOrigin<R> key = newOrigin(primarySpecIndex, values);
 		TicketMachine<R, D> machine;
 		synchronized (machines) {
 			machine = machines.get(key);
@@ -329,11 +331,12 @@ public class TicketFactory<R, D> {
 		return new TicketMachine<R, D>(this, key);
 	}
 
-	private TicketOrigin<R> newOrigin(int specNumber, R origin) {
+	private TicketOrigin<R> newOrigin(int specNumber, Object... values) {
+		R origin = config.originAdapter.adapt(values);
 		BitVectorWriter writer = new BitVectorWriter();
 		CodedWriter w = new CodedWriter(writer, TicketFactory.CODING);
-		config.originAdapter.write(w, false, origin);
-		return new TicketOrigin<R>(specNumber, writer.toImmutableBitVector(), origin);
+		config.originAdapter.write(w, false, values);
+		return new TicketOrigin<R>(specNumber, writer.toImmutableBitVector(), origin, values);
 	}
 
 }

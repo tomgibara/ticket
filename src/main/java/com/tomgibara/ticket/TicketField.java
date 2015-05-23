@@ -62,10 +62,17 @@ public @interface TicketField {
 	/**
 	 * The index of the field in the ticket data encoding.
 	 *
-	 * @return
+	 * @return the index of the field
 	 */
 
 	int value();
+
+	/**
+	 * Indicates whether a field value should be encrypted before being included
+	 * within a ticket.
+	 *
+	 * @return true if the field value should be encrypted
+	 */
 
 	boolean secret() default false;
 }
