@@ -88,12 +88,6 @@ public class TicketMachine<R, D> {
 
 	// methods
 
-	public boolean isDisposable() {
-		synchronized (lock) {
-			return seqNumber == 0 || spec.timestamp() > seqTimestamp;
-		}
-	}
-
 	public Ticket<R, D> ticket() throws TicketException {
 		return ticketImpl( factory.config.dataAdapter.unadapt(null) );
 	}
@@ -163,6 +157,14 @@ public class TicketMachine<R, D> {
 		BitVector bits = writer.toImmutableBitVector();
 		String string = factory.format.encode(bits, factory.config.ticketCharLimit);
 		return new Ticket<R, D>(spec, bits, timestamp, seq, origin.origin, data, string);
+	}
+
+	// package scoped methods
+
+	boolean isDisposable() {
+		synchronized (lock) {
+			return seqNumber == 0 || spec.timestamp() > seqTimestamp;
+		}
 	}
 
 }
