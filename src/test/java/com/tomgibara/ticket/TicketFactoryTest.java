@@ -17,7 +17,9 @@
 package com.tomgibara.ticket;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import junit.framework.TestCase;
@@ -101,10 +103,13 @@ public class TicketFactoryTest extends TestCase {
 				.withSpecifications(spec)
 				.newFactory();
 
+		Map<String, TicketOrigin<LongOrigin>> map = new HashMap<String, TicketOrigin<LongOrigin>>();
 		for (int i = 0; i < 100000; i++) {
-			factory.machineForOriginValues((long) i).ticket();
+			TicketMachine<LongOrigin, Void> machine = factory.machineForOriginValues((long) i);
+			TicketOrigin<LongOrigin> origin = machine.getOrigin();
+			assertNull(map.put(origin.toString(), origin));
+			machine.ticket();
 		}
-
 	}
 
 	interface SessionData {

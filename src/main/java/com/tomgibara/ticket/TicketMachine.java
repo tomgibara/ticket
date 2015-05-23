@@ -77,13 +77,9 @@ public class TicketMachine<R, D> {
 	public TicketFactory<R, D> getFactory() {
 		return factory;
 	}
-
-	public int getSpecNumber() {
-		return origin.specNumber;
-	}
-
-	public R getOrigin() {
-		return origin.origin;
+	
+	public TicketOrigin<R> getOrigin() {
+		return origin;
 	}
 
 	// methods

@@ -18,12 +18,26 @@ package com.tomgibara.ticket;
 
 import com.tomgibara.bits.BitVector;
 
-final class TicketOrigin<R> {
+/**
+ * <p>
+ * A unique origin is associated with each ticket machine in a factory. An
+ * origin combines the open (ie. non secret) elements of a ticket origin with a
+ * specification number.
+ * 
+ * @author Tom Gibara
+ *
+ * @param <R>
+ *            the ticket origin type
+ */
+
+//TODO find an alternative name
+public final class TicketOrigin<R> {
 
 	final int specNumber;
 	final BitVector openOriginBits;
 	final R origin;
 	final Object[] values;
+	private String id = null;
 
 	TicketOrigin(int specNumber, BitVector openOriginBits, R origin, Object... values) {
 		this.specNumber = specNumber;
@@ -31,6 +45,18 @@ final class TicketOrigin<R> {
 		this.origin = origin;
 		this.values = values;
 	}
+	
+	// public accessors
+	
+	public int getSpecNumber() {
+		return specNumber;
+	}
+
+	public R getOrigin() {
+		return origin;
+	}
+
+	// object methods
 
 	@Override
 	public int hashCode() {
@@ -45,5 +71,10 @@ final class TicketOrigin<R> {
 		if (this.specNumber != that.specNumber) return false;
 		if (!this.openOriginBits.equals(that.openOriginBits)) return false;
 		return true;
+	}
+
+	@Override
+	public String toString() {
+		return id == null ? id = openOriginBits.toString(16) + '0' + (specNumber + 1) : id;
 	}
 }
