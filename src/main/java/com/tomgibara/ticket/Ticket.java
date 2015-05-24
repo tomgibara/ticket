@@ -80,14 +80,14 @@ public final class Ticket<R, D> {
 	private final TicketSpec spec;
 	private final BitVector bits;
 	private final long millis;
-	private final int seq;
+	private final long seq;
 	private final R origin;
 	private final D data;
 	private final String string;
 
 	// constructors
 
-	Ticket(TicketSpec spec, BitVector bits, long timestamp, int seq, R origin, D data, String string) {
+	Ticket(TicketSpec spec, BitVector bits, long timestamp, long seq, R origin, D data, String string) {
 		this.spec = spec;
 		this.bits = bits;
 		this.millis = spec.timestampToMillis(timestamp);
@@ -128,7 +128,7 @@ public final class Ticket<R, D> {
 	 * @return the sequence number
 	 */
 
-	public int getSequenceNumber() {
+	public long getSequenceNumber() {
 		return seq;
 	}
 

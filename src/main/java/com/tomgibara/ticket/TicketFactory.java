@@ -98,6 +98,7 @@ public class TicketFactory<R, D> {
 	}
 
 	final TicketConfig<R, D> config;
+	final TicketSequences<R> sequences;
 	final TicketSpec[] specs;
 	final KeccakDigest[] digests;
 	final int primarySpecIndex;
@@ -106,8 +107,9 @@ public class TicketFactory<R, D> {
 
 	private final Map<TicketOrigin<R>, TicketMachine<R,D>> machines = new HashMap<TicketOrigin<R>, TicketMachine<R,D>>();
 
-	TicketFactory(TicketConfig<R,D> config, byte[]... secrets) {
+	TicketFactory(TicketConfig<R,D> config, TicketSequences<R> sequences, byte[]... secrets) {
 		this.config = config;
+		this.sequences = sequences == null ? new Sequences() : sequences;
 		List<TicketSpec> list = config.getSpecifications();
 		specs = (TicketSpec[]) list.toArray(new TicketSpec[list.size()]);
 		digests = createDigests(specs, secrets);
@@ -339,4 +341,39 @@ public class TicketFactory<R, D> {
 		return new TicketOrigin<R>(specNumber, writer.toImmutableBitVector(), origin, values);
 	}
 
+	// inner classes
+
+	private class Sequences implements TicketSequences<R> {
+
+		@Override
+		public TicketSequence<R> getSequence(TicketOrigin<R> origin) {
+			return new Sequence<R>();
+		}
+
+	}
+
+	private static class Sequence<R> implements TicketSequence<R> {
+
+		// the timestamp for which the number sequence is increasing
+		private long timestamp = -1L;
+		// set to the next sequence number
+		private long number = 0L;
+
+		@Override
+		public synchronized long nextSequenceNumber(long timestamp) {
+			if (this.timestamp > timestamp) {
+				number = 0;
+				this.timestamp = timestamp;
+			} else if (number == Long.MIN_VALUE) {
+				throw new TicketException("Sequence numbers exhausted");
+			}
+			return number ++;
+		}
+
+		@Override
+		public boolean isDisposable(long timestamp) {
+			return number == 0 || timestamp > this.timestamp;
+		}
+
+	}
 }

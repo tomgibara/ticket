@@ -51,22 +51,18 @@ public class TicketMachine<R, D> {
 
 	private final TicketFactory<R, D> factory;
 	private final TicketOrigin<R> origin;
+	private final TicketSequence<R> sequence;
 	private final TicketSpec spec;
 
 	private final boolean hasSecret;
-	// would be nice to use an AtomicInteger
-	// but we need to operate over two values synchronously
-	private final Object lock = new Object();
-	private long seqTimestamp = 0L;
-	// set to the next sequence number
-	//TODO consider making long?
-	private int seqNumber = 0;
 
 	// constructors
 
 	TicketMachine(TicketFactory<R, D> factory, TicketOrigin<R> origin) {
 		this.factory = factory;
 		this.origin = origin;
+		sequence = factory.sequences.getSequence(origin);
+		if (sequence == null) throw new IllegalStateException("No sequence for origin: " + origin);
 		spec = factory.specs[origin.specNumber];
 		TicketConfig<R, D> config = factory.config;
 		hasSecret = config.originAdapter.isSecretive() || config.dataAdapter.isSecretive();
@@ -77,7 +73,7 @@ public class TicketMachine<R, D> {
 	public TicketFactory<R, D> getFactory() {
 		return factory;
 	}
-	
+
 	public TicketOrigin<R> getOrigin() {
 		return origin;
 	}
@@ -104,20 +100,12 @@ public class TicketMachine<R, D> {
 		CodedWriter w = new CodedWriter(writer, TicketFactory.CODING);
 		int number = origin.specNumber;
 		long timestamp = spec.timestamp();
-		int seq;
-		synchronized (lock) {
-			if (timestamp > seqTimestamp) {
-				seqNumber = 0;
-				seqTimestamp = timestamp;
-			}
-			seq = seqNumber ++;
-		}
-		if (seq == -1) throw new TicketException("Sequence numbers exhausted");
+		long seq = sequence.nextSequenceNumber(timestamp);
 		int length = 0;
 		length += w.writePositiveInt(TicketFactory.VERSION);
 		length += w.writePositiveInt(number);
 		length += w.writePositiveLong(timestamp);
-		length += w.writePositiveInt(seq);
+		length += w.writePositiveLong(seq);
 		length += origin.openOriginBits.writeTo(writer);
 		length += dataAdapter.write(w, false, dataValues);
 		if (hasSecret) {
@@ -158,9 +146,7 @@ public class TicketMachine<R, D> {
 	// package scoped methods
 
 	boolean isDisposable() {
-		synchronized (lock) {
-			return seqNumber == 0 || spec.timestamp() > seqTimestamp;
-		}
+		return sequence.isDisposable(spec.timestamp());
 	}
 
 }

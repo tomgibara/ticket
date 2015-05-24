@@ -244,7 +244,12 @@ public final class TicketConfig<R,D> implements Serializable {
 	 * @return a new ticket factory
 	 */
 	public TicketFactory<R,D> newFactory(byte[]... secrets) {
-		return new TicketFactory<R, D>(this, secrets);
+		return new TicketFactory<R, D>(this, null, secrets);
+	}
+
+	//TODO document
+	public TicketFactory<R,D> newFactory(TicketSequences<R> sequences, byte[]... secrets) {
+		return new TicketFactory<R, D>(this, sequences, secrets);
 	}
 
 	// object methods

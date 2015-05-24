@@ -23,7 +23,12 @@ import com.tomgibara.bits.BitVector;
  * A unique origin is associated with each ticket machine in a factory. An
  * origin combines the open (ie. non secret) elements of a ticket origin with a
  * specification number.
- * 
+ * <p>
+ * The {@link #toString()} method always returns a string key which uniquely
+ * identifies one {@link TicketMachine} among all possible machines in a
+ * {@link TicketFactory}. This identifier may be used by {@link TicketSequences}
+ * to maintain a separate sequence for each machine.
+ *
  * @author Tom Gibara
  *
  * @param <R>
@@ -45,9 +50,9 @@ public final class TicketOrigin<R> {
 		this.origin = origin;
 		this.values = values;
 	}
-	
+
 	// public accessors
-	
+
 	public int getSpecNumber() {
 		return specNumber;
 	}
