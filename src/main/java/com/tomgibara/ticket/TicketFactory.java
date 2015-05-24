@@ -244,7 +244,7 @@ public class TicketFactory<R, D> {
 			int number = r.readPositiveInt();
 			if (number > primarySpecIndex) throw new TicketException("Unsupported ticket specification.");
 			spec = specs[number];
-			timestamp = r.readPositiveLong();
+			timestamp = r.readLong();
 			seq = r.readPositiveInt();
 			TicketAdapter<R> originAdapter = config.originAdapter;
 			TicketAdapter<D> dataAdapter = config.dataAdapter;
@@ -341,7 +341,7 @@ public class TicketFactory<R, D> {
 		BitVector secretBits = originBits(true, values);
 		return new TicketBasis<R>(specNumber, openBits, secretBits, origin, values);
 	}
-	
+
 	private BitVector originBits(boolean secret, Object... values) {
 		BitVectorWriter writer = new BitVectorWriter();
 		CodedWriter w = new CodedWriter(writer, TicketFactory.CODING);

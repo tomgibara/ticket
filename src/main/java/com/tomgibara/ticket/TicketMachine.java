@@ -169,7 +169,7 @@ public class TicketMachine<R, D> {
 		int length = 0;
 		length += w.writePositiveInt(TicketFactory.VERSION);
 		length += w.writePositiveInt(number);
-		length += w.writePositiveLong(timestamp);
+		length += w.writeLong(timestamp);
 		length += w.writePositiveLong(seq);
 		length += basis.openOriginBits.writeTo(writer);
 		length += dataAdapter.write(w, false, dataValues);
