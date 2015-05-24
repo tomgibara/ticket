@@ -390,4 +390,19 @@ public class TicketFactoryTest extends TestCase {
 		}
 	}
 
+	public void testSecret() {
+		TicketConfig<MySecretOrigin, MySecretData> config = TicketConfig.getDefault()
+				.withOriginType(MySecretOrigin.class)
+				.withDataType(MySecretData.class)
+				.withSpecifications();
+
+		TicketFactory<MySecretOrigin, MySecretData> good = config.newFactory(new byte[] {1});
+		TicketMachine<MySecretOrigin, MySecretData> machine = good.machineForOriginValues(432L, 24380L);
+		Ticket<MySecretOrigin, MySecretData> ticket = machine.ticketDataValues(80L, 1000L);
+
+		String str = ticket.toString();
+		Ticket<MySecretOrigin, MySecretData> result = good.decodeTicket(str);
+		assertEquals(ticket, result);
+	}
+
 }
