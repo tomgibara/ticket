@@ -337,10 +337,16 @@ public class TicketFactory<R, D> {
 
 	private TicketOrigin<R> newOrigin(int specNumber, Object... values) {
 		R origin = config.originAdapter.adapt(values);
+		BitVector openBits = originBits(false, values);
+		BitVector secretBits = originBits(true, values);
+		return new TicketOrigin<R>(specNumber, openBits, secretBits, origin, values);
+	}
+	
+	private BitVector originBits(boolean secret, Object... values) {
 		BitVectorWriter writer = new BitVectorWriter();
 		CodedWriter w = new CodedWriter(writer, TicketFactory.CODING);
 		config.originAdapter.write(w, false, values);
-		return new TicketOrigin<R>(specNumber, writer.toImmutableBitVector(), origin, values);
+		return writer.toImmutableBitVector();
 	}
 
 	// inner classes

@@ -16,6 +16,8 @@
  */
 package com.tomgibara.ticket;
 
+import java.math.BigInteger;
+
 import com.tomgibara.bits.BitVector;
 
 /**
@@ -35,19 +37,20 @@ import com.tomgibara.bits.BitVector;
  *            the ticket origin type
  */
 
-//TODO must store secret data too (and guard id in this case)
 //TODO find an alternative name
 public final class TicketOrigin<R> {
 
 	final int specNumber;
 	final BitVector openOriginBits;
+	final BitVector secretOriginBits;
 	final R origin;
 	final Object[] values;
 	private String id = null;
 
-	TicketOrigin(int specNumber, BitVector openOriginBits, R origin, Object... values) {
+	TicketOrigin(int specNumber, BitVector openOriginBits, BitVector secretOriginBits, R origin, Object... values) {
 		this.specNumber = specNumber;
 		this.openOriginBits = openOriginBits;
+		this.secretOriginBits = secretOriginBits;
 		this.origin = origin;
 		this.values = values;
 	}
@@ -66,7 +69,7 @@ public final class TicketOrigin<R> {
 
 	@Override
 	public int hashCode() {
-		return specNumber + openOriginBits.hashCode();
+		return specNumber + openOriginBits.hashCode() + secretOriginBits.hashCode();
 	}
 
 	@Override
@@ -76,11 +79,30 @@ public final class TicketOrigin<R> {
 		TicketOrigin<?> that = (TicketOrigin<?>) obj;
 		if (this.specNumber != that.specNumber) return false;
 		if (!this.openOriginBits.equals(that.openOriginBits)) return false;
+		if (!this.secretOriginBits.equals(that.secretOriginBits)) return false;
 		return true;
 	}
 
 	@Override
 	public String toString() {
-		return id == null ? id = openOriginBits.toString(16) + '0' + (specNumber + 1) : id;
+		if (id != null) return id;
+		if (secretOriginBits.size() == 0) {
+			id = openOriginBits.toString(16) + '0' + (specNumber + 1);
+		} else {
+			KeccakDigest digest = new KeccakDigest(TicketFactory.DIGEST_SIZE);
+			byte[] openBytes = openOriginBits.toByteArray();
+			byte[] secretBytes = secretOriginBits.toByteArray();
+			digest.update(openBytes, 0, openBytes.length);
+			digest.update(secretBytes, 0, secretBytes.length);
+			digest.update((byte) (specNumber >> 24));
+			digest.update((byte) (specNumber >> 16));
+			digest.update((byte) (specNumber >>  8));
+			digest.update((byte) (specNumber      ));
+			byte[] magnitude = new byte[digest.getDigestSize()];
+			digest.doFinal(magnitude, 0);
+			// trims leading zeros, but shouldn't be an issue
+			id = new BigInteger(1, magnitude).toString(16);
+		}
+		return id;
 	}
 }

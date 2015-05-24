@@ -369,11 +369,17 @@ public class TicketFactoryTest extends TestCase {
 				.withSpecifications();
 
 		TicketFactory<MySecretOrigin, Void> good = config.newFactory(new byte[] {1});
-		Ticket<MySecretOrigin, Void> ticket = good.machineForOriginValues(432L, 24380L).ticket();
+		TicketMachine<MySecretOrigin, Void> machine = good.machineForOriginValues(432L, 24380L);
+		Ticket<MySecretOrigin, Void> ticket = machine.ticket();
 
 		String str = ticket.toString();
 		Ticket<MySecretOrigin, Void> result = good.decodeTicket(str);
 		assertEquals(ticket, result);
+
+		String originId = machine.getOrigin().toString();
+		assertEquals(originId, machine.getOrigin().toString());
+		String originId2 = good.machineForOriginValues(431L, 24381L).getOrigin().toString();
+		assertFalse(originId.equals( originId2 ));
 
 		TicketFactory<MySecretOrigin, Void> bad1 = config.newFactory(new byte[] {2});
 		try {
