@@ -50,8 +50,8 @@ public interface TicketSequences<R> {
 	 * valid sequence for any supplied origin.
 	 * <p>
 	 * Note that the origins supplied to this method provide
-	 * {@link TicketOrigin#equals(Object)} and {@link TicketOrigin#hashCode()}
-	 * implementations and a {@link TicketOrigin#toString()} representation that
+	 * {@link TicketBasis#equals(Object)} and {@link TicketBasis#hashCode()}
+	 * implementations and a {@link TicketBasis#toString()} representation that
 	 * can serve as a unique key for the origin.
 	 *
 	 * @param origin
@@ -60,6 +60,6 @@ public interface TicketSequences<R> {
 	 */
 
 	//NOTE exceptions from this method are permitted to bubble-up when obtaining machines
-	TicketSequence getSequence(TicketOrigin<R> origin);
+	TicketSequence getSequence(TicketBasis<R> origin);
 
 }

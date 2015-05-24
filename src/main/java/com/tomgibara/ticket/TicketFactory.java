@@ -107,7 +107,7 @@ public class TicketFactory<R, D> {
 	final SecureRandom random;
 	volatile TicketFormat format = TicketFormat.DEFAULT;
 
-	private final Map<TicketOrigin<R>, TicketMachine<R,D>> machines = new HashMap<TicketOrigin<R>, TicketMachine<R,D>>();
+	private final Map<TicketBasis<R>, TicketMachine<R,D>> machines = new HashMap<TicketBasis<R>, TicketMachine<R,D>>();
 
 	TicketFactory(TicketConfig<R,D> config, TicketSequences<R> sequences, byte[]... secrets) {
 		this.config = config;
@@ -317,10 +317,10 @@ public class TicketFactory<R, D> {
 	// private helper methods
 
 	private TicketMachine<R, D> machineImpl(Object... values) {
-		TicketOrigin<R> key = newOrigin(primarySpecIndex, values);
+		TicketBasis<R> basis = newBasis(primarySpecIndex, values);
 		TicketMachine<R, D> machine;
 		synchronized (machines) {
-			machine = machines.get(key);
+			machine = machines.get(basis);
 			for (Iterator<TicketMachine<R,D>> i = machines.values().iterator(); i.hasNext(); ) {
 				TicketMachine<R, D> existing = i.next();
 				if (existing == machine) continue;
@@ -328,18 +328,18 @@ public class TicketFactory<R, D> {
 				i.remove();
 			}
 			if (machine == null) {
-				machine = new TicketMachine<R, D>(this, key);
-				machines.put(key, machine);
+				machine = new TicketMachine<R, D>(this, basis);
+				machines.put(basis, machine);
 			}
 		}
-		return new TicketMachine<R, D>(this, key);
+		return new TicketMachine<R, D>(this, basis);
 	}
 
-	private TicketOrigin<R> newOrigin(int specNumber, Object... values) {
+	private TicketBasis<R> newBasis(int specNumber, Object... values) {
 		R origin = config.originAdapter.adapt(values);
 		BitVector openBits = originBits(false, values);
 		BitVector secretBits = originBits(true, values);
-		return new TicketOrigin<R>(specNumber, openBits, secretBits, origin, values);
+		return new TicketBasis<R>(specNumber, openBits, secretBits, origin, values);
 	}
 	
 	private BitVector originBits(boolean secret, Object... values) {
@@ -354,7 +354,7 @@ public class TicketFactory<R, D> {
 	private class Sequences implements TicketSequences<R> {
 
 		@Override
-		public TicketSequence getSequence(TicketOrigin<R> origin) {
+		public TicketSequence getSequence(TicketBasis<R> origin) {
 			return new Sequence();
 		}
 

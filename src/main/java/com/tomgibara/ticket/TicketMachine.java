@@ -62,7 +62,7 @@ public class TicketMachine<R, D> {
 	// fields
 
 	private final TicketFactory<R, D> factory;
-	private final TicketOrigin<R> origin;
+	private final TicketBasis<R> basis;
 	private final TicketSequence sequence;
 	private final TicketSpec spec;
 
@@ -70,12 +70,12 @@ public class TicketMachine<R, D> {
 
 	// constructors
 
-	TicketMachine(TicketFactory<R, D> factory, TicketOrigin<R> origin) {
+	TicketMachine(TicketFactory<R, D> factory, TicketBasis<R> basis) {
 		this.factory = factory;
-		this.origin = origin;
-		sequence = factory.sequences.getSequence(origin);
-		if (sequence == null) throw new IllegalStateException("No sequence for origin: " + origin);
-		spec = factory.specs[origin.specNumber];
+		this.basis = basis;
+		sequence = factory.sequences.getSequence(basis);
+		if (sequence == null) throw new IllegalStateException("No sequence for basis: " + basis);
+		spec = factory.specs[basis.specNumber];
 		TicketConfig<R, D> config = factory.config;
 		hasSecret = config.originAdapter.isSecretive() || config.dataAdapter.isSecretive();
 	}
@@ -93,16 +93,15 @@ public class TicketMachine<R, D> {
 	}
 
 	/**
-	 * The information about the origin of the tickets created by this factory.
-	 * This includes not only the origin with which the generated tickets will
-	 * be marked, but also the specification number that is being used by this
-	 * factory.
+	 * The basis on which the tickets are created by this machine. This includes
+	 * not only the origin with which the generated tickets will be marked, but
+	 * also the specification number that is being used by this factory.
 	 *
-	 * @return the ticket origin
+	 * @return the ticket basis
 	 */
 
-	public TicketOrigin<R> getOrigin() {
-		return origin;
+	public TicketBasis<R> getBasis() {
+		return basis;
 	}
 
 	// methods
@@ -158,13 +157,13 @@ public class TicketMachine<R, D> {
 		D data = dataAdapter.adapt(dataValues);
 		BitVectorWriter writer = new BitVectorWriter();
 		CodedWriter w = new CodedWriter(writer, TicketFactory.CODING);
-		int number = origin.specNumber;
+		int number = basis.specNumber;
 		long timestamp = spec.timestamp();
 		final long seq;
 		try {
 			seq = sequence.nextSequenceNumber(timestamp);
 		} catch (RuntimeException e) {
-			throw new TicketException("Failed to obtain sequence number for origin: " + origin, e);
+			throw new TicketException("Failed to obtain sequence number for origin: " + basis, e);
 		}
 		if (seq < 0) throw new TicketException("Ticket sequence returned a negative number: " + seq);
 		int length = 0;
@@ -172,7 +171,7 @@ public class TicketMachine<R, D> {
 		length += w.writePositiveInt(number);
 		length += w.writePositiveLong(timestamp);
 		length += w.writePositiveLong(seq);
-		length += origin.openOriginBits.writeTo(writer);
+		length += basis.openOriginBits.writeTo(writer);
 		length += dataAdapter.write(w, false, dataValues);
 		if (hasSecret) {
 			// digest this prefix
@@ -184,7 +183,7 @@ public class TicketMachine<R, D> {
 			// start by writing the secret fields into a bit vector
 			BitVectorWriter sWriter = new BitVectorWriter();
 			CodedWriter sW = new CodedWriter(sWriter, TicketFactory.CODING);
-			factory.config.originAdapter.write(sW, true, origin.values);
+			factory.config.originAdapter.write(sW, true, basis.values);
 			dataAdapter.write(sW, true, dataValues);
 			// add a nonce between 16 and 32 bits to avoid deducing information from the secret length
 			// we compute this from the 64 MSB bits which we reserve from the digest.
@@ -206,7 +205,7 @@ public class TicketMachine<R, D> {
 		length += writer.writeBooleans(false, padding);
 		BitVector bits = writer.toImmutableBitVector();
 		String string = factory.format.encode(bits, factory.config.ticketCharLimit);
-		return new Ticket<R, D>(spec, bits, timestamp, seq, origin.origin, data, string);
+		return new Ticket<R, D>(spec, bits, timestamp, seq, basis.origin, data, string);
 	}
 
 	// package scoped methods

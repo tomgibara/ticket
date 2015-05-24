@@ -22,9 +22,8 @@ import com.tomgibara.bits.BitVector;
 
 /**
  * <p>
- * A unique origin is associated with each ticket machine in a factory. An
- * origin combines the open (ie. non secret) elements of a ticket origin with a
- * specification number.
+ * Each ticket machine in a factory creates tickets with a unique basis. A
+ * basis combines the a ticket origin with a specification number.
  * <p>
  * The {@link #toString()} method always returns a string key which uniquely
  * identifies one {@link TicketMachine} among all possible machines in a
@@ -37,8 +36,7 @@ import com.tomgibara.bits.BitVector;
  *            the ticket origin type
  */
 
-//TODO find an alternative name
-public final class TicketOrigin<R> {
+public final class TicketBasis<R> {
 
 	final int specNumber;
 	final BitVector openOriginBits;
@@ -47,7 +45,7 @@ public final class TicketOrigin<R> {
 	final Object[] values;
 	private String id = null;
 
-	TicketOrigin(int specNumber, BitVector openOriginBits, BitVector secretOriginBits, R origin, Object... values) {
+	TicketBasis(int specNumber, BitVector openOriginBits, BitVector secretOriginBits, R origin, Object... values) {
 		this.specNumber = specNumber;
 		this.openOriginBits = openOriginBits;
 		this.secretOriginBits = secretOriginBits;
@@ -75,8 +73,8 @@ public final class TicketOrigin<R> {
 	@Override
 	public boolean equals(Object obj) {
 		if (obj == this) return true;
-		if (!(obj instanceof TicketOrigin)) return false;
-		TicketOrigin<?> that = (TicketOrigin<?>) obj;
+		if (!(obj instanceof TicketBasis)) return false;
+		TicketBasis<?> that = (TicketBasis<?>) obj;
 		if (this.specNumber != that.specNumber) return false;
 		if (!this.openOriginBits.equals(that.openOriginBits)) return false;
 		if (!this.secretOriginBits.equals(that.secretOriginBits)) return false;

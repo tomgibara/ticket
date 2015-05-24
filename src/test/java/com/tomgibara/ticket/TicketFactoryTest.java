@@ -101,10 +101,10 @@ public class TicketFactoryTest extends TestCase {
 				.withSpecifications(spec)
 				.newFactory();
 
-		Map<String, TicketOrigin<LongOrigin>> map = new HashMap<String, TicketOrigin<LongOrigin>>();
+		Map<String, TicketBasis<LongOrigin>> map = new HashMap<String, TicketBasis<LongOrigin>>();
 		for (int i = 0; i < 100000; i++) {
 			TicketMachine<LongOrigin, Void> machine = factory.machineForOriginValues((long) i);
-			TicketOrigin<LongOrigin> origin = machine.getOrigin();
+			TicketBasis<LongOrigin> origin = machine.getBasis();
 			assertNull(map.put(origin.toString(), origin));
 			machine.ticket();
 		}
@@ -376,9 +376,9 @@ public class TicketFactoryTest extends TestCase {
 		Ticket<MySecretOrigin, Void> result = good.decodeTicket(str);
 		assertEquals(ticket, result);
 
-		String originId = machine.getOrigin().toString();
-		assertEquals(originId, machine.getOrigin().toString());
-		String originId2 = good.machineForOriginValues(431L, 24381L).getOrigin().toString();
+		String originId = machine.getBasis().toString();
+		assertEquals(originId, machine.getBasis().toString());
+		String originId2 = good.machineForOriginValues(431L, 24381L).getBasis().toString();
 		assertFalse(originId.equals( originId2 ));
 
 		TicketFactory<MySecretOrigin, Void> bad1 = config.newFactory(new byte[] {2});
