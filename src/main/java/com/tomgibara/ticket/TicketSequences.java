@@ -59,7 +59,7 @@ public interface TicketSequences<R> {
 	 * @return a ticket numbering sequence
 	 */
 
-	//TODO should catch runtime exceptions from this
+	//NOTE exceptions from this method are permitted to bubble-up when obtaining machines
 	TicketSequence getSequence(TicketOrigin<R> origin);
 
 }

@@ -160,8 +160,13 @@ public class TicketMachine<R, D> {
 		CodedWriter w = new CodedWriter(writer, TicketFactory.CODING);
 		int number = origin.specNumber;
 		long timestamp = spec.timestamp();
-		long seq = sequence.nextSequenceNumber(timestamp);
-		//TODO guard against possible negative sequence numbers
+		final long seq;
+		try {
+			seq = sequence.nextSequenceNumber(timestamp);
+		} catch (RuntimeException e) {
+			throw new TicketException("Failed to obtain sequence number for origin: " + origin, e);
+		}
+		if (seq < 0) throw new TicketException("Ticket sequence returned a negative number: " + seq);
 		int length = 0;
 		length += w.writePositiveInt(TicketFactory.VERSION);
 		length += w.writePositiveInt(number);
