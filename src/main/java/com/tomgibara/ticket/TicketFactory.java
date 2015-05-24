@@ -17,7 +17,6 @@
 package com.tomgibara.ticket;
 
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -34,14 +33,18 @@ import com.tomgibara.coding.ExtendedCoding;
 
 /**
  * Provides {@link TicketMachine} instances to create tickets and a
- * {@link #decodeTicket(String)} method to decode them. This class may be
- * regarded as the functional entry point of this package; applications will
- * generally establish {@link TicketSpec}, {@link TicketConfig} and
- * {@link TicketFormat} instances for the purpose of creating a ticket factory
- * that is then used to create and decode {@link Ticket} objects.
+ * {@link #decodeTicket(String)} method to decode them. Assuming monotonic
+ * timing and reliable ticket sequence numbers, all of the tickets created by a
+ * factory are guaranteed to be unique.
+ * <p>
+ * This class may be regarded as the functional entry point of this package;
+ * applications will generally establish {@link TicketSpec},
+ * {@link TicketConfig} and {@link TicketFormat} instances for the purpose of
+ * creating a ticket factory that is then used to create and decode
+ * {@link Ticket} objects.
  * <p>
  * Though ticket factories will frequently be dedicated to creating tickets for
- * a single origin, factories are able to create tickets from multiple origins.
+ * a single origin, they may be used to create tickets from multiple origins.
  * For this reason, ticket creation is delegated to {@link TicketMachine}
  * instances which operate on behalf of the factory, with each machine dedicated
  * to creating tickets for a single origin.
@@ -59,7 +62,6 @@ import com.tomgibara.coding.ExtendedCoding;
 
 //NOTE Keccak is used for a simpler life without HMAC: http://keccak.noekeon.org/ - we simply hash and append
 //NOTE it is a minor weakness of this design that the ticket must be parsed before the checksum can be validated
-//TODO support persistence of serial numbers by passing in interface during config
 //TODO consider allowing null specs to indicate that version cannot be used?
 //TODO consider adding 'self description' capability with a ticket inspection capability
 public class TicketFactory<R, D> {

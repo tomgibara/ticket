@@ -23,6 +23,12 @@ import java.util.TimeZone;
 import com.tomgibara.bits.BitVector;
 import com.tomgibara.bits.BitVectorWriter;
 
+/**
+ * Specifies the structure of tickets created by a {@link TicketFactory}.
+ *
+ * @author Tom Gibara
+ */
+
 public final class TicketSpec implements Serializable {
 
 	private static final long serialVersionUID = -4576985625208064336L;
@@ -97,6 +103,15 @@ public final class TicketSpec implements Serializable {
 
 	}
 
+	/**
+	 * Used to create new {@link TicketSpec} instances. Builders are usually
+	 * obtained via {@link TicketSpec#defaultBuilder()} but may also be obtained
+	 * from any existing specification via {@link TicketSpec#builder()}.
+	 *
+	 * @author Tom Gibara
+	 *
+	 */
+
 	public static class Builder {
 
 		private State state;
@@ -105,11 +120,30 @@ public final class TicketSpec implements Serializable {
 			this.state = state;
 		}
 
+		/**
+		 * Sets the timezone in which tickets timestamps will be computed.
+		 *
+		 * @param timeZone
+		 *            a timezone, not null
+		 * @return the builder
+		 */
+
 		public Builder setTimeZone(TimeZone timeZone) {
 			if (timeZone == null) throw new IllegalArgumentException("null timeZone");
 			state = state.setTimeZone(timeZone);
 			return this;
 		}
+
+		/**
+		 * Sets the granularity of the timestamps which will be recorded against
+		 * tickets. Coarser granularities provide lower resolution timing
+		 * information about tickets but require less data to be stored in the
+		 * tickets.
+		 *
+		 * @param granularity
+		 *            the required timestamp granularity
+		 * @return the builder
+		 */
 
 		public Builder setGranularity(Ticket.Granularity granularity) {
 			if (granularity == null) throw new IllegalArgumentException("null granularity");
@@ -117,10 +151,32 @@ public final class TicketSpec implements Serializable {
 			return this;
 		}
 
+		/**
+		 * Specifies a year before which no ticket could feasibly be generated.
+		 *
+		 * @param originYear
+		 *            the year dot
+		 * @return the builder
+		 */
 		public Builder setOriginYear(int originYear) {
 			state = state.setOriginYear(originYear);
 			return this;
 		}
+
+		/**
+		 * Specifies the number of bits that will used to record a hash inside
+		 * the ticket. The hash can prevent transmission errors from incorrectly
+		 * being recognized as valid. When combined with secret keys, hashes may
+		 * also prevent forgery of tickets.
+		 *
+		 * @param hashLength
+		 *            the number of bits in the hash
+		 * @return the builder
+		 * @throws IllegalArgumentException
+		 *             if the hash length is negative, or exceeds an
+		 *             implementation specific maximum (currently 160 bits)
+		 * @see TicketConfig#newFactory(TicketSequences, byte[]...)
+		 */
 
 		public Builder setHashLength(int hashLength) {
 			if (hashLength < 0) throw new IllegalArgumentException("hashLength negative");
@@ -129,15 +185,39 @@ public final class TicketSpec implements Serializable {
 			return this;
 		}
 
+		/**
+		 * Builds a new specification using the values recorded by this builder.
+		 *
+		 * @return a new ticket specification
+		 */
 		public TicketSpec build() {
 			return new TicketSpec(state);
 		}
 	}
 
+	/**
+	 * A default specification. This specification will be used by a factory if
+	 * no other specifications are declared in its configuration.
+	 * <p>
+	 * The origin year is 2015 (the inception year of this library), the
+	 * timezone is UTC and timestamps have {@link Ticket.Granularity#SECOND}. No
+	 * hash is specified (ie. the hash length is zero).
+	 *
+	 * @return the default ticket specification.
+	 * @see TicketConfig#newFactory(TicketSequences, byte[]...)
+	 */
+
 	public static TicketSpec getDefault() {
 		return DEFAULT;
 	}
 
+	/**
+	 * A builder which is initialized to match the default ticket specification.
+	 *
+	 * @return a new default builder
+	 */
+
+	//TODO consider renaming to include "new"
 	public static Builder defaultBuilder() {
 		return new Builder(DEFAULT_STATE);
 	}
@@ -152,17 +232,40 @@ public final class TicketSpec implements Serializable {
 
 	// public accessors
 
+	/**
+	 * The specified timezone.
+	 *
+	 * @return a timezone, never null
+	 */
 	public TimeZone getTimeZone() {
 		return state.timeZone;
 	}
+
+	/**
+	 * The specified timestamp granularity
+	 *
+	 * @return a granularity, never null
+	 */
 
 	public Ticket.Granularity getGranularity() {
 		return state.granularity;
 	}
 
+	/**
+	 * The specified origin year.
+	 *
+	 * @return the origin year
+	 */
+
 	public int getOriginYear() {
 		return state.originYear;
 	}
+
+	/**
+	 * The specified number of bits recorded when hashing the ticket.
+	 *
+	 * @return the hash length, or zero if the tickets are not hashed
+	 */
 
 	public int getHashLength() {
 		return state.hashLength;
@@ -170,6 +273,12 @@ public final class TicketSpec implements Serializable {
 
 	// public methods
 
+	/**
+	 * A new builder that is initialized to with the specification settings.
+	 *
+	 * @return a new builder
+	 */
+	// TODO consider renaming this method too: newBuilder()
 	public Builder builder() {
 		return new Builder(state);
 	}

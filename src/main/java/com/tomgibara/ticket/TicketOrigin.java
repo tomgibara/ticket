@@ -35,6 +35,7 @@ import com.tomgibara.bits.BitVector;
  *            the ticket origin type
  */
 
+//TODO must store secret data too (and guard id in this case)
 //TODO find an alternative name
 public final class TicketOrigin<R> {
 

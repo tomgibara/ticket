@@ -16,10 +16,45 @@
  */
 package com.tomgibara.ticket;
 
+/**
+ * Generates sequence numbers for tickets. Sequence numbers need only be
+ * distinct across individual timestamps, and should generally be kept small.
+ * <p>
+ * A minimal valid implementation is to maintain a sequence number counter that
+ * is incremented on each repetition of a timestamp, and reset to zero on each
+ * new timestamp observed.
+ *
+ * @author Tom Gibara
+ *
+ * @param <R>
+ *            the type of ticket origin
+ */
+
+//TODO do we need the generic type?
 public interface TicketSequence<R> {
+
+	/**
+	 * The next sequence number to be assigned to a ticket. Note that method may
+	 * be called concurrently by multiple threads.
+	 *
+	 * @param timestamp
+	 *            a timestamp associated with a ticket
+	 * @return a non-negative sequence number
+	 * @throws TicketException
+	 *             if a sequence number cannot be generated
+	 */
 
 	long nextSequenceNumber(long timestamp) throws TicketException;
 
+	/**
+	 * Whether the supplied timestamp has yet to be assigned a sequence number
+	 *
+	 * @param timestamp
+	 *            a timestamp associated with a ticket
+	 * @return true if the timestamp has never been assigned a sequence number,
+	 *         false otherwise
+	 */
+	//TODO change to isUnsequenced
 	boolean isDisposable(long timestamp);
 
 }

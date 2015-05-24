@@ -223,8 +223,24 @@ public final class TicketConfig<R,D> implements Serializable {
 	}
 
 	/**
+	 * Creates a new ticket factory with default ticket sequencing.
+	 *
+	 * @param secrets
+	 *            the secrets used to create unfalsifiable tickets
+	 * @return a new ticket factory
+	 * @see #newFactory(TicketSequences, byte[]...)
+	 */
+
+	public TicketFactory<R,D> newFactory(byte[]... secrets) {
+		return new TicketFactory<R, D>(this, null, secrets);
+	}
+
+	/**
 	 * <p>
 	 * Creates a new ticket factory with this configuration.
+	 * <p>
+	 * When supplied, the sequences parameter may be used to control the
+	 * assignment of sequence numbers to tickets.
 	 * <p>
 	 * The secrets parameter is optional and is only effective when combined
 	 * with specifications which include ticket hashing. Secret byte arrays
@@ -239,15 +255,14 @@ public final class TicketConfig<R,D> implements Serializable {
 	 * all other cases, an absent or null, or zero length secret will be treated
 	 * identically.
 	 *
+	 * @param sequences
+	 *            controls the assignment of sequence numbers to tickets, may be
+	 *            null
 	 * @param secrets
 	 *            the secrets used to create unfalsifiable tickets
 	 * @return a new ticket factory
 	 */
-	public TicketFactory<R,D> newFactory(byte[]... secrets) {
-		return new TicketFactory<R, D>(this, null, secrets);
-	}
 
-	//TODO document
 	public TicketFactory<R,D> newFactory(TicketSequences<R> sequences, byte[]... secrets) {
 		return new TicketFactory<R, D>(this, sequences, secrets);
 	}

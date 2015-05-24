@@ -329,7 +329,7 @@ final class TicketAdapter<T> implements Serializable {
 		return values;
 	}
 
-	int write(CodedWriter w, boolean secret, Object... values) throws TicketException {
+	int write(CodedWriter w, boolean secret, Object... values) {
 		if (values.length != fields.length) throw new IllegalArgumentException();
 		Field[] fields = secret ? secretFields : openFields;
 		int length = fields.length;

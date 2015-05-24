@@ -22,6 +22,18 @@ import com.tomgibara.bits.BitVector;
 import com.tomgibara.bits.BitVectorWriter;
 import com.tomgibara.coding.CodedWriter;
 
+/**
+ * Creates new tickets on behalf of a {@link TicketFactory}. Each ticket machine
+ * is dedicated to the creation of tickets for a single origin.
+ *
+ * @author Tom Gibara
+ *
+ * @param <R>
+ *            the type of origin information recorded in tickets
+ * @param <D>
+ *            the type of data information recorded in tickets
+ */
+
 public class TicketMachine<R, D> {
 
 	// statics
@@ -70,9 +82,24 @@ public class TicketMachine<R, D> {
 
 	// accessors
 
+	/**
+	 * The factory for which this machine creates tickets.
+	 *
+	 * @return the owning factory
+	 */
+
 	public TicketFactory<R, D> getFactory() {
 		return factory;
 	}
+
+	/**
+	 * The information about the origin of the tickets created by this factory.
+	 * This includes not only the origin with which the generated tickets will
+	 * be marked, but also the specification number that is being used by this
+	 * factory.
+	 *
+	 * @return the ticket origin
+	 */
 
 	public TicketOrigin<R> getOrigin() {
 		return origin;
@@ -80,13 +107,46 @@ public class TicketMachine<R, D> {
 
 	// methods
 
+	/**
+	 * Creates a new ticket with default data values. This is equivalent to
+	 * supplying null data to {@link #ticketData(Object)} or no values to
+	 * {@link #ticketDataValues(Object...)}.
+	 *
+	 * @return a new ticket
+	 * @throws TicketException
+	 *             if the sequence numbers have become exhausted
+	 */
+
 	public Ticket<R, D> ticket() throws TicketException {
 		return ticketImpl( factory.config.dataAdapter.unadapt(null) );
 	}
 
+	/**
+	 * Creates a ticket with the supplied data.
+	 *
+	 * @param data
+	 *            the data associated with the ticket, or null
+	 * @return a new ticket
+	 * @throws TicketException
+	 *             if the sequence numbers have become exhausted
+	 */
+
 	public Ticket<R, D> ticketData(D data) throws TicketException {
 		return ticketImpl( factory.config.dataAdapter.unadapt(data) );
 	}
+
+	/**
+	 * Creates a ticket with the supplied data.
+	 *
+	 * @param data
+	 *            the data associated with the ticket, or null
+	 * @return a new ticket
+	 * @throws TicketException
+	 *             if the sequence numbers have become exhausted
+	 * @throws IllegalArgumentException
+	 *             if too many values are supplied or their types do not match
+	 *             those indicated by the ticket's data interface
+	 */
 
 	public Ticket<R, D> ticketDataValues(Object... dataValues) throws TicketException {
 		if (dataValues == null) throw new IllegalArgumentException("null dataValues");
@@ -101,6 +161,7 @@ public class TicketMachine<R, D> {
 		int number = origin.specNumber;
 		long timestamp = spec.timestamp();
 		long seq = sequence.nextSequenceNumber(timestamp);
+		//TODO guard against possible negative sequence numbers
 		int length = 0;
 		length += w.writePositiveInt(TicketFactory.VERSION);
 		length += w.writePositiveInt(number);
