@@ -25,8 +25,6 @@ import java.util.Set;
 import junit.framework.TestCase;
 
 import com.tomgibara.ticket.Ticket.Granularity;
-import com.tomgibara.ticket.TicketFactoryTest.LongOrigin;
-import com.tomgibara.ticket.TicketFactoryTest.MySecretData;
 
 public class TicketFactoryTest extends TestCase {
 
