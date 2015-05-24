@@ -50,7 +50,6 @@ public interface TicketSequence {
 	 * @return true if the timestamp has never been assigned a sequence number,
 	 *         false otherwise
 	 */
-	//TODO change to isUnsequenced
-	boolean isDisposable(long timestamp);
+	boolean isUnsequenced(long timestamp);
 
 }

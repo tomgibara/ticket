@@ -207,7 +207,7 @@ public class TicketMachine<R, D> {
 	// package scoped methods
 
 	boolean isDisposable() {
-		return sequence.isDisposable(spec.timestamp());
+		return sequence.isUnsequenced(spec.timestamp());
 	}
 
 }

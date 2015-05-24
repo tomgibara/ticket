@@ -373,7 +373,7 @@ public class TicketFactory<R, D> {
 		}
 
 		@Override
-		public boolean isDisposable(long timestamp) {
+		public boolean isUnsequenced(long timestamp) {
 			return number == 0 || timestamp > this.timestamp;
 		}
 
