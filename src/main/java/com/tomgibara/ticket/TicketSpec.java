@@ -105,7 +105,7 @@ public final class TicketSpec implements Serializable {
 
 	/**
 	 * Used to create new {@link TicketSpec} instances. Builders are usually
-	 * obtained via {@link TicketSpec#defaultBuilder()} but may also be obtained
+	 * obtained via {@link TicketSpec#newDefaultBuilder()} but may also be obtained
 	 * from any existing specification via {@link TicketSpec#builder()}.
 	 *
 	 * @author Tom Gibara
@@ -217,8 +217,7 @@ public final class TicketSpec implements Serializable {
 	 * @return a new default builder
 	 */
 
-	//TODO consider renaming to include "new"
-	public static Builder defaultBuilder() {
+	public static Builder newDefaultBuilder() {
 		return new Builder(DEFAULT_STATE);
 	}
 

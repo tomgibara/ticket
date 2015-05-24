@@ -39,7 +39,7 @@ public class TicketConfigTest extends TestCase {
 	public void testSerialization() throws Exception {
 		testSerialization(TicketConfig.getDefault());
 		testSerialization(TicketConfig.getDefault().withDataType(CustomData.class).withSpecifications(
-				TicketSpec.defaultBuilder().setGranularity(Granularity.MILLISECOND).setHashLength(18).setOriginYear(0).setTimeZone(TimeZone.getTimeZone("BST")).build()
+				TicketSpec.newDefaultBuilder().setGranularity(Granularity.MILLISECOND).setHashLength(18).setOriginYear(0).setTimeZone(TimeZone.getTimeZone("BST")).build()
 				));
 	}
 

@@ -48,7 +48,7 @@ public class TicketFactoryTest extends TestCase {
 	}
 
 	public void testUniqueness() {
-		TicketSpec spec = TicketSpec.defaultBuilder()
+		TicketSpec spec = TicketSpec.newDefaultBuilder()
 				.setGranularity(Granularity.MILLISECOND)
 				.build();
 		TicketFactory<Void, Void> factory = TicketConfig.getDefault()
@@ -95,7 +95,7 @@ public class TicketFactoryTest extends TestCase {
 	}
 
 	public void testManyOrigins() {
-		TicketSpec spec = TicketSpec.defaultBuilder().setGranularity(Granularity.MILLISECOND).build();
+		TicketSpec spec = TicketSpec.newDefaultBuilder().setGranularity(Granularity.MILLISECOND).build();
 		TicketFactory<LongOrigin, Void> factory = TicketConfig.getDefault()
 				.withOriginType(LongOrigin.class)
 				.withSpecifications(spec)
@@ -150,7 +150,7 @@ public class TicketFactoryTest extends TestCase {
 	}
 
 	private TicketFactory<LongOrigin, SessionData> hashingFactory(byte[] secret, int length) {
-		TicketSpec spec = TicketSpec.defaultBuilder().setGranularity(Granularity.HOUR).setHashLength(length).build();
+		TicketSpec spec = TicketSpec.newDefaultBuilder().setGranularity(Granularity.HOUR).setHashLength(length).build();
 		return TicketConfig.getDefault()
 				.withOriginType(LongOrigin.class)
 				.withDataType(SessionData.class)
@@ -293,7 +293,7 @@ public class TicketFactoryTest extends TestCase {
 	}
 
 	public void testCustomFactory() {
-		TicketSpec spec = TicketSpec.defaultBuilder().setGranularity(Granularity.MINUTE).build();
+		TicketSpec spec = TicketSpec.newDefaultBuilder().setGranularity(Granularity.MINUTE).build();
 		TicketFactory<MyOrigin, MyData> factory = TicketConfig.getDefault()
 				.withOriginType(MyOrigin.class)
 				.withDataType(MyData.class)
