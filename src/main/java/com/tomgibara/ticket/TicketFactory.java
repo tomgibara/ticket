@@ -348,13 +348,13 @@ public class TicketFactory<R, D> {
 	private class Sequences implements TicketSequences<R> {
 
 		@Override
-		public TicketSequence<R> getSequence(TicketOrigin<R> origin) {
-			return new Sequence<R>();
+		public TicketSequence getSequence(TicketOrigin origin) {
+			return new Sequence();
 		}
 
 	}
 
-	private static class Sequence<R> implements TicketSequence<R> {
+	private static class Sequence<R> implements TicketSequence {
 
 		// the timestamp for which the number sequence is increasing
 		private long timestamp = -1L;

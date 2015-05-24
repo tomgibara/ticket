@@ -60,6 +60,6 @@ public interface TicketSequences<R> {
 	 */
 
 	//TODO should catch runtime exceptions from this
-	TicketSequence<R> getSequence(TicketOrigin<R> origin);
+	TicketSequence getSequence(TicketOrigin<R> origin);
 
 }

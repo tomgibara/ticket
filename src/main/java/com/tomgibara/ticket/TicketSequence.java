@@ -25,13 +25,9 @@ package com.tomgibara.ticket;
  * new timestamp observed.
  *
  * @author Tom Gibara
- *
- * @param <R>
- *            the type of ticket origin
  */
 
-//TODO do we need the generic type?
-public interface TicketSequence<R> {
+public interface TicketSequence {
 
 	/**
 	 * The next sequence number to be assigned to a ticket. Note that method may

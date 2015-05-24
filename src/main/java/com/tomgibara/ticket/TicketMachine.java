@@ -63,7 +63,7 @@ public class TicketMachine<R, D> {
 
 	private final TicketFactory<R, D> factory;
 	private final TicketOrigin<R> origin;
-	private final TicketSequence<R> sequence;
+	private final TicketSequence sequence;
 	private final TicketSpec spec;
 
 	private final boolean hasSecret;
