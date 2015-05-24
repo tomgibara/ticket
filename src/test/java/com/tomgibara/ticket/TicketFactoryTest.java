@@ -405,4 +405,48 @@ public class TicketFactoryTest extends TestCase {
 		assertEquals(ticket, result);
 	}
 
+	public static class TestSequences implements TicketSequences<Void> {
+		private Map<String, TestSequence> sequences = new HashMap<String, TicketFactoryTest.TestSequence>();
+		@Override
+		public synchronized TicketSequence getSequence(TicketBasis<Void> origin) {
+			String key = origin.toString();
+			TestSequence sequence = sequences.get(key);
+			if (sequence == null) {
+				sequence = new TestSequence();
+				sequences.put(key, sequence);
+			}
+			return sequence;
+		}
+	}
+
+	public static class TestSequence implements TicketSequence {
+
+		private long timestamp = -1L;
+		private long number = 0L;
+
+		@Override
+		public long nextSequenceNumber(long timestamp) throws TicketException {
+			if (this.timestamp > timestamp) {
+				number = 0;
+				this.timestamp = timestamp;
+			}
+			return number ++;
+		}
+
+		@Override
+		public boolean isUnsequenced(long timestamp) {
+			return number == 0 || timestamp > this.timestamp;
+		}
+
+	}
+
+	public void testSequenceContinuity() {
+		TicketSpec spec = TicketSpec.newDefaultBuilder().setGranularity(Granularity.HOUR).build();
+		TicketConfig<Void, Void> config = TicketConfig.getDefault().withSpecifications(spec);
+		TestSequences sequences = new TestSequences();
+		Ticket<Void, Void> ticket1 = config.newFactory(sequences).machine().ticket();
+		Ticket<Void, Void> ticket2 = config.newFactory(sequences).machine().ticket();
+		assertTrue(ticket1.getSequenceNumber() + 1 == ticket2.getSequenceNumber());
+	}
+
 }
