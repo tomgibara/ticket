@@ -248,7 +248,6 @@ public final class TicketFormat implements Serializable {
 	// serialization methods
 
 	private Object writeReplace() {
-		System.out.println("CALLED");
 		return new Serial(this);
 	}
 
