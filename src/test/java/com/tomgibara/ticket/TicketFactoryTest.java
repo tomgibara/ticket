@@ -444,7 +444,7 @@ public class TicketFactoryTest extends TestCase {
 		}
 
 		@Override
-		public boolean isUnsequenced(long timestamp) {
+		public boolean isSequencePersisted(long timestamp) {
 			return number == 0 || timestamp > this.timestamp;
 		}
 

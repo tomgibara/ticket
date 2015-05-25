@@ -67,6 +67,7 @@ public class TicketMachine<R, D> {
 	private final TicketSpec spec;
 
 	private final boolean hasSecret;
+	volatile long accessTime;
 
 	// constructors
 
@@ -78,6 +79,7 @@ public class TicketMachine<R, D> {
 		spec = factory.specs[basis.specNumber];
 		TicketConfig<R, D> config = factory.config;
 		hasSecret = config.originAdapter.isSecretive() || config.dataAdapter.isSecretive();
+		accessTime = System.currentTimeMillis();
 	}
 
 	// accessors
@@ -153,6 +155,7 @@ public class TicketMachine<R, D> {
 	}
 
 	private Ticket<R, D> ticketImpl(Object... dataValues) throws TicketException {
+		accessTime = System.currentTimeMillis();
 		TicketAdapter<D> dataAdapter = factory.config.dataAdapter;
 		D data = dataAdapter.adapt(dataValues);
 		BitVectorWriter writer = new BitVectorWriter();
@@ -211,7 +214,7 @@ public class TicketMachine<R, D> {
 	// package scoped methods
 
 	boolean isDisposable() {
-		return sequence.isUnsequenced(spec.timestamp());
+		return sequence.isSequencePersisted(spec.timestamp());
 	}
 
 }

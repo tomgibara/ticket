@@ -43,13 +43,17 @@ public interface TicketSequence {
 	long nextSequenceNumber(long timestamp) throws TicketException;
 
 	/**
-	 * Whether the supplied timestamp has yet to be assigned a sequence number
+	 * Whether the sequence has been persisted for the given timestamp.
+	 * Implementations which do not provide persistent sequence numbers may
+	 * still return true if the specified timestamp has yet to be assigned a
+	 * sequence number.
 	 *
 	 * @param timestamp
 	 *            a timestamp associated with a ticket
-	 * @return true if the timestamp has never been assigned a sequence number,
-	 *         false otherwise
+	 * @return true if the sequence has persisted the associated sequence state
+	 *         or the timestamp has never been assigned a sequence number, false
+	 *         otherwise
 	 */
-	boolean isUnsequenced(long timestamp);
+	boolean isSequencePersisted(long timestamp);
 
 }

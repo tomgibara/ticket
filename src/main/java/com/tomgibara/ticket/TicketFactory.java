@@ -416,7 +416,7 @@ public class TicketFactory<R, D> {
 		}
 
 		@Override
-		public boolean isUnsequenced(long timestamp) {
+		public boolean isSequencePersisted(long timestamp) {
 			return number == 0 || timestamp > this.timestamp;
 		}
 
