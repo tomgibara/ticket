@@ -1,7 +1,8 @@
 # ticket
 a ticket generation and validation library for Java
 
-## Features
+Features
+--------
 
  * Well designed API.
  * A compact human-friendly ASCII format for tickets. 
@@ -11,7 +12,8 @@ a ticket generation and validation library for Java
  * Decode old tickets while issuing tickets with newer formats.
  * Pluggable ticket sequencing for persistence across restarts.
 
-## API Walkthrough
+API Walkthrough
+---------------
 
 Tickets are created via factories. The simplest way to create a
 factory and a ticket is this:
@@ -140,3 +142,20 @@ that are not included in this walkthrough, these include:**
  * Ticket origins that store information about the source of a ticket
  * Ticket data that encodes specific information inside a ticket
  * Secret ticket data which can be encrypted inside a ticket
+
+Usage
+-----
+
+The ticket library is available from the Maven central repository:
+
+> Group ID:    `com.tomgibara.ticket`
+> Artifact ID: `ticket`
+> Version:     `1.0.0`
+
+The Maven dependency being:
+
+    <dependency>
+      <groupId>com.tomgibara.ticket</groupId>
+      <artifactId>ticket</artifactId>
+      <version>1.0.0</version>
+    </dependency>
