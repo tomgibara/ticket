@@ -197,8 +197,8 @@ public class TicketFactory<R, D> {
 	 * origin type interface (as per the {@link TicketField} annotation); any
 	 * null or absent value is assigned a default.
 	 *
-	 * @param origin
-	 *            the origin to be declared for the created tickets
+	 * @param originValues
+	 *            the origin values for the created tickets
 	 * @return a ticket machine for the specified origin.
 	 * @see TicketField
 	 */

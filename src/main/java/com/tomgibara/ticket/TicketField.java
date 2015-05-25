@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
  * <ul>
  * <li>The interface must have at least one annotated accessor.
  * <li>Every accessors must return: a primitive, an array of primitives, a
- * <code>String</code> or an </code>Enum</code>.
+ * <code>String</code> or an <code>Enum</code>.
  * <li>Accessor methods cannot have arguments.
  * <li>Every accessor must be assigned a unique index (see {@link #value()}).
  * <li>The indices must begin at 0 and be contiguous.

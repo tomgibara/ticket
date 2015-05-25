@@ -137,8 +137,8 @@ public class TicketMachine<R, D> {
 	/**
 	 * Creates a ticket with the supplied data.
 	 *
-	 * @param data
-	 *            the data associated with the ticket, or null
+	 * @param dataValues
+	 *            the data associated with the ticket
 	 * @return a new ticket
 	 * @throws TicketException
 	 *             if the sequence numbers have become exhausted

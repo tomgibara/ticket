@@ -163,6 +163,8 @@ public final class TicketConfig<R,D> implements Serializable {
 	 *
 	 * @param originType
 	 *            <code>Void.class</code> or an interface
+	 * @param <S>
+	 *            the new origin type
 	 * @return a new configuration or possibly the same
 	 * @see TicketField
 	 */
@@ -184,6 +186,8 @@ public final class TicketConfig<R,D> implements Serializable {
 	 *
 	 * @param dataType
 	 *            <code>Void.class</code> or an interface
+	 * @param <E>
+	 *            the new data type
 	 * @return a new configuration or possibly the same
 	 * @see TicketField
 	 */

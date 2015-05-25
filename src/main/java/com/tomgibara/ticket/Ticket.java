@@ -113,7 +113,7 @@ public final class Ticket<R, D> {
 	 * The time at which this ticket was originally created. The timestamp will
 	 * only be accurate to up to the specified granularity.
 	 *
-	 * @return
+	 * @return the timestamp in milliseconds
 	 * @see Granularity
 	 */
 

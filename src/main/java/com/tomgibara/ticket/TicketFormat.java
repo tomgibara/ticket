@@ -95,8 +95,6 @@ public final class TicketFormat implements Serializable {
 	 * Creates a new ticket format. See the corresponding accessors on this
 	 * class for a complete explanation of the parameters
 	 *
-	 * @param ticketCharLimit
-	 *            the maximum length of ticket that will be encoded or decoded
 	 * @param upperCase
 	 *            true if the tickets should be encoded using upper case
 	 *            characters, false if lower case characters should be used
