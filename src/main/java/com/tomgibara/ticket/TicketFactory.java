@@ -66,6 +66,8 @@ import com.tomgibara.coding.ExtendedCoding;
 //TODO consider adding 'self description' capability with a ticket inspection capability
 public class TicketFactory<R, D> {
 
+	private static final TicketPolicy sDefaultPolicy = new DefaultTicketPolicy();
+
 	// note, not configurable because we don't want to expose "bits" level abstractions
 	// there is probably very little benefit in exposing this anyway
 	static final ExtendedCoding CODING = EliasOmegaCoding.extended;
@@ -99,6 +101,18 @@ public class TicketFactory<R, D> {
 		return digests;
 	}
 
+	/**
+	 * The policy which is applied to the factory by default.
+	 *
+	 * @return the default policy
+	 */
+
+	public static TicketPolicy getDefaultPolicy() {
+		return sDefaultPolicy;
+	}
+
+	// fields
+
 	final TicketConfig<R, D> config;
 	final TicketSequences<R> sequences;
 	final TicketSpec[] specs;
@@ -106,6 +120,7 @@ public class TicketFactory<R, D> {
 	final int primarySpecIndex;
 	final SecureRandom random;
 	volatile TicketFormat format = TicketFormat.DEFAULT;
+	volatile TicketPolicy policy = sDefaultPolicy;
 
 	private final Map<TicketBasis<R>, TicketMachine<R,D>> machines = new HashMap<TicketBasis<R>, TicketMachine<R,D>>();
 
@@ -130,6 +145,28 @@ public class TicketFactory<R, D> {
 
 	public TicketConfig<R, D> getConfig() {
 		return config;
+	}
+
+	/**
+	 * Changes the policy which is applied by this factory. The policy
+	 * parameterizes some aspects of the ticket factory's operation. If a null
+	 * policy is supplied, the factory reverts to a default policy.
+	 *
+	 * @param policy
+	 */
+
+	public void setPolicy(TicketPolicy policy) {
+		this.policy = policy == null ? sDefaultPolicy : policy;
+	}
+
+	/**
+	 * The policy which is currently in effect for the factory.
+	 *
+	 * @return the current policy, never null
+	 */
+
+	public TicketPolicy getPolicy() {
+		return policy;
 	}
 
 	/**
@@ -228,7 +265,7 @@ public class TicketFactory<R, D> {
 		int length = str.length();
 		if (length == 0) throw new IllegalArgumentException("empty str");
 		// decode string to bits
-		BitVector bits = format.decode(str, config.ticketCharLimit);
+		BitVector bits = format.decode(str, policy.getTicketCharLimit());
 		int size = bits.size();
 		// read ticket data
 		TicketSpec spec;

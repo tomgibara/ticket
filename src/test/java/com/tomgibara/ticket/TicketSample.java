@@ -16,8 +16,8 @@ public class TicketSample extends TestCase {
 		 * factory and a ticket is this:
 		 */
 
-		TicketFactory<Void, Void> factory = TicketConfig.getDefault().newFactory();
-		Ticket<Void, Void> ticket = factory.machine().ticket();
+			TicketFactory<Void, Void> factory = TicketConfig.getDefault().newFactory();
+			Ticket<Void, Void> ticket = factory.machine().ticket();
 
 		/**
 		 * To convert this ticket into ASCII for reporting to a user (or

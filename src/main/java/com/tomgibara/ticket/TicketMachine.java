@@ -204,7 +204,7 @@ public class TicketMachine<R, D> {
 		int padding = 4 - (length + 4) % 5;
 		length += writer.writeBooleans(false, padding);
 		BitVector bits = writer.toImmutableBitVector();
-		String string = factory.format.encode(bits, factory.config.ticketCharLimit);
+		String string = factory.format.encode(bits, factory.policy.getTicketCharLimit());
 		return new Ticket<R, D>(spec, bits, timestamp, seq, basis.origin, data, string);
 	}
 

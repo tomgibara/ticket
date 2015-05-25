@@ -67,9 +67,19 @@ public class TicketFactoryTest extends TestCase {
 		} while (System.currentTimeMillis() < finish);
 	}
 
+	static class ShortPolicy implements TicketPolicy {
+
+		@Override
+		public int getTicketCharLimit() {
+			return 5;
+		}
+
+	}
+
 	public void testLengthLimit() {
 		TicketFactory<Void, Void> longFactory = TicketConfig.getDefault().newFactory();
-		TicketFactory<Void, Void> shortFactory = TicketConfig.getDefault().withTicketCharLimit(5).newFactory();
+		TicketFactory<Void, Void> shortFactory = TicketConfig.getDefault().newFactory();
+		shortFactory.setPolicy(new ShortPolicy());
 
 		try {
 			Ticket<Void, Void> ticket = longFactory.machine().ticket();
