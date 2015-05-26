@@ -18,6 +18,8 @@ package com.tomgibara.ticket;
 
 import java.math.BigInteger;
 
+import javax.management.RuntimeErrorException;
+
 import com.tomgibara.bits.BitVector;
 
 /**
@@ -36,7 +38,7 @@ import com.tomgibara.bits.BitVector;
  *            the ticket origin type
  */
 
-public final class TicketBasis<R> {
+public final class TicketBasis<R> implements Cloneable {
 
 	final int specNumber;
 	final BitVector openOriginBits;
@@ -64,6 +66,16 @@ public final class TicketBasis<R> {
 	}
 
 	// object methods
+
+	@Override
+	@SuppressWarnings("unchecked")
+	protected TicketBasis<R> clone() {
+		try {
+			return (TicketBasis<R>) super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new IllegalStateException(e);
+		}
+	}
 
 	@Override
 	public int hashCode() {

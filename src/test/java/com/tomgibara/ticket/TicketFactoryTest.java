@@ -67,7 +67,7 @@ public class TicketFactoryTest extends TestCase {
 		} while (System.currentTimeMillis() < finish);
 	}
 
-	static class ShortPolicy implements TicketPolicy {
+	static class ShortPolicy extends DefaultTicketPolicy {
 
 		@Override
 		public int getTicketCharLimit() {
@@ -104,20 +104,61 @@ public class TicketFactoryTest extends TestCase {
 
 	}
 
-	public void testManyOrigins() {
+	public void testManyOrigins() throws InterruptedException {
 		TicketSpec spec = TicketSpec.newDefaultBuilder().setGranularity(Granularity.MILLISECOND).build();
 		TicketFactory<LongOrigin, Void> factory = TicketConfig.getDefault()
 				.withOriginType(LongOrigin.class)
 				.withSpecifications(spec)
 				.newFactory();
 
-		Map<String, TicketBasis<LongOrigin>> map = new HashMap<String, TicketBasis<LongOrigin>>();
+		Set<String> set = new HashSet<String>();
 		for (int i = 0; i < 100000; i++) {
 			TicketMachine<LongOrigin, Void> machine = factory.machineForOriginValues((long) i);
 			TicketBasis<LongOrigin> origin = machine.getBasis();
-			assertNull(map.put(origin.toString(), origin));
+			assertTrue(set.add(origin.toString()));
+			if ((i % 10000) == 0) Thread.sleep(5);
 			machine.ticket();
 		}
+	}
+
+	public void testCanonicalBasis() throws InterruptedException {
+		TicketSpec spec = TicketSpec.newDefaultBuilder().setGranularity(Granularity.MILLISECOND).build();
+		TicketFactory<Void, Void> factory = TicketConfig.getDefault().withSpecifications(spec).newFactory();
+		TicketMachine<Void, Void> machine1 = factory.machine();
+		TicketBasis<Void> basis1 = machine1.getBasis();
+		TicketMachine<Void, Void> machine2 = factory.machine();
+		TicketBasis<Void> basis2 = machine2.getBasis();
+		if (machine1 == machine2) {
+			System.err.println("Warning cannot: confirm basis canonicalization");
+		} else {
+			// we probably have different machines, but we should have the same basis
+			assertSame(basis1, basis2);
+		}
+	}
+
+	static class CachingPolicy extends DefaultTicketPolicy {
+
+		@Override
+		public int getMachineCacheSize() {
+			return 2;
+		}
+
+	}
+
+	public void testCachedMachine() {
+		TicketFactory<Void, Void> factory = TicketConfig.getDefault().newFactory();
+		TicketMachine<Void, Void> machine1;
+		TicketMachine<Void, Void> machine2;
+
+		machine1 = factory.machine();
+		machine2 = factory.machine();
+		assertNotSame(machine1, machine2);
+
+		factory.setPolicy(new CachingPolicy());
+
+		machine1 = factory.machine();
+		machine2 = factory.machine();
+		assertSame(machine1, machine2);
 	}
 
 	interface SessionData {

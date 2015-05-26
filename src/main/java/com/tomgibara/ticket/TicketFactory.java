@@ -16,11 +16,14 @@
  */
 package com.tomgibara.ticket;
 
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.security.SecureRandom;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import com.tomgibara.bits.BitReader;
 import com.tomgibara.bits.BitStreamException;
@@ -119,8 +122,13 @@ public class TicketFactory<R, D> {
 	final KeccakDigest[] digests;
 	final int primarySpecIndex;
 	final SecureRandom random;
+
 	volatile TicketFormat format = TicketFormat.DEFAULT;
 	volatile TicketPolicy policy = sDefaultPolicy;
+
+	// fields for canonicalizing bases
+	private final ReferenceQueue<TicketBasis<R>> basisQueue = new ReferenceQueue<TicketBasis<R>>();
+	private final Map<TicketBasis<R>, BasisRef<R>> bases = new HashMap<TicketBasis<R>, BasisRef<R>>();
 
 	private final Map<TicketBasis<R>, TicketMachine<R,D>> machines = new HashMap<TicketBasis<R>, TicketMachine<R,D>>();
 
@@ -351,25 +359,52 @@ public class TicketFactory<R, D> {
 		if (sLength > TicketFactory.DIGEST_SIZE - 64) throw new TicketException("secret data too large");
 	}
 
+	void recordMachineAccess(TicketMachine<R,D> machine) {
+		if (policy.getMachineCacheSize() <= 0) return;
+		TicketBasis<R> basis = machine.getBasis();
+		synchronized (machines) {
+			TicketMachine<R,D> cached = machines.get(basis);
+			if (cached != machine) machines.put(basis, machine);
+		}
+	}
+
 	// private helper methods
 
 	private TicketMachine<R, D> machineImpl(Object... values) {
-		TicketBasis<R> basis = newBasis(primarySpecIndex, values);
+		// we use a canonical basis, this assists with reliably allocating sequences
+		TicketBasis<R> basis = getBasis(primarySpecIndex, values);
 		TicketMachine<R, D> machine;
-		synchronized (machines) {
+		if (policy.getMachineCacheSize() <= 0) {
+			machine = new TicketMachine<R, D>(this, basis);
+		} else synchronized (machines) {
 			machine = machines.get(basis);
-			for (Iterator<TicketMachine<R,D>> i = machines.values().iterator(); i.hasNext(); ) {
-				TicketMachine<R, D> existing = i.next();
-				if (existing == machine) continue;
-				if (!existing.isDisposable()) continue;
-				i.remove();
-			}
 			if (machine == null) {
 				machine = new TicketMachine<R, D>(this, basis);
 				machines.put(basis, machine);
 			}
 		}
-		return new TicketMachine<R, D>(this, basis);
+		return machine;
+	}
+
+	@SuppressWarnings("unchecked")
+	private TicketBasis<R> getBasis(int specNumber, Object... values) {
+		synchronized (bases) {
+			// clean up stale bases
+			while (true) {
+				BasisRef<R> ref = (BasisRef<R>) basisQueue.poll();
+				if (ref == null) break;
+				bases.remove(ref.key);
+			}
+			// check for existing canonical instance
+			TicketBasis<R> basis = newBasis(specNumber, values);
+			BasisRef<R> ref = bases.get(basis);
+			TicketBasis<R> canon = ref == null ? null : ref.get();
+			if (canon != null) return canon;
+			// record a new canonical instance
+			ref = new BasisRef<R>(basis, basisQueue);
+			bases.put(ref.key, ref);
+			return basis;
+		}
 	}
 
 	private TicketBasis<R> newBasis(int specNumber, Object... values) {
@@ -390,9 +425,20 @@ public class TicketFactory<R, D> {
 
 	private class Sequences implements TicketSequences<R> {
 
+		private final WeakHashMap<TicketBasis<R>, Sequence> map = new WeakHashMap<TicketBasis<R>, Sequence>();
+
 		@Override
-		public TicketSequence getSequence(TicketBasis<R> origin) {
-			return new Sequence();
+		// note: canonical basis means we can ensure the same basis is always mapped to the same sequence
+		public Sequence getSequence(TicketBasis<R> basis) {
+			Sequence sequence;
+			synchronized (map) {
+				sequence = map.get(basis);
+				if (sequence == null) {
+					sequence = new Sequence();
+				}
+				map.put(basis, sequence);
+			}
+			return sequence;
 		}
 
 	}
@@ -418,6 +464,27 @@ public class TicketFactory<R, D> {
 		@Override
 		public boolean isSequencePersisted(long timestamp) {
 			return number == 0 || timestamp > this.timestamp;
+		}
+
+	}
+
+	private static class BasisRef<R> extends WeakReference<TicketBasis<R>> {
+
+		final TicketBasis<R> key;
+
+		public BasisRef(TicketBasis<R> value, ReferenceQueue<? super TicketBasis<R>> queue) {
+			super(value, queue);
+			this.key = value.clone();
+		}
+
+	}
+
+	@SuppressWarnings("serial")
+	private class MachineMap extends LinkedHashMap<TicketBasis<R>, TicketMachine<R,D>> {
+
+		@Override
+		protected boolean removeEldestEntry (Map.Entry<TicketBasis<R>, TicketMachine<R, D>> eldest) {
+			return size() > policy.getMachineCacheSize();
 		}
 
 	}

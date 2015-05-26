@@ -25,4 +25,17 @@ public interface TicketPolicy {
 
 	int getTicketCharLimit();
 
+	/**
+	 * The maximum number of {@link TicketMachine} instances that a
+	 * {@link TicketFactory} is permitted to cache internally. It is possible
+	 * that a {@link TicketFactory} may be called on to repeatedly create
+	 * {@link TicketMachine} instances for a number of different origins.
+	 * Caching the most frequently used machine instances may improve
+	 * performance in these situations.
+	 *
+	 * @return the maximum cache size, or zero to disable caching.
+	 */
+
+	int getMachineCacheSize();
+
 }
