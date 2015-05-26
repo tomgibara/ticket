@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.WeakHashMap;
 
 import com.tomgibara.bits.BitReader;
 import com.tomgibara.bits.BitStreamException;
