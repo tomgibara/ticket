@@ -67,6 +67,7 @@ public class TicketFactoryTest extends TestCase {
 		} while (System.currentTimeMillis() < finish);
 	}
 
+	@SuppressWarnings("serial")
 	static class ShortPolicy extends DefaultTicketPolicy {
 
 		@Override
@@ -136,6 +137,7 @@ public class TicketFactoryTest extends TestCase {
 		}
 	}
 
+	@SuppressWarnings("serial")
 	static class CachingPolicy extends DefaultTicketPolicy {
 
 		@Override
