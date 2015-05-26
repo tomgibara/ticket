@@ -491,11 +491,6 @@ public class TicketFactoryTest extends TestCase {
 			return number ++;
 		}
 
-		@Override
-		public boolean isSequencePersisted(long timestamp) {
-			return number == 0 || timestamp > this.timestamp;
-		}
-
 	}
 
 	public void testSequenceContinuity() {

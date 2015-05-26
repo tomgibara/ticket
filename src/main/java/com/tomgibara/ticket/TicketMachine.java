@@ -209,10 +209,4 @@ public class TicketMachine<R, D> {
 		return new Ticket<R, D>(spec, bits, timestamp, seq, basis.origin, data, string);
 	}
 
-	// package scoped methods
-
-	boolean isDisposable() {
-		return sequence.isSequencePersisted(spec.timestamp());
-	}
-
 }

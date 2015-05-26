@@ -451,11 +451,6 @@ public class TicketFactory<R, D> {
 			return number ++;
 		}
 
-		@Override
-		public boolean isSequencePersisted(long timestamp) {
-			return number == 0 || timestamp > this.timestamp;
-		}
-
 	}
 
 	private static class BasisRef<R> extends WeakReference<TicketBasis<R>> {
