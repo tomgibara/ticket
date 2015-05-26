@@ -139,6 +139,7 @@ changed without invalidating tickets hashed with older secrets.
 that are not included in this walkthrough, these include:**
 
  * **`TicketSequences`** for allocating sequence numbers
+ * **`TicketPolicy`** for specifying internal factory limits
  * Ticket origins that store information about the source of a ticket
  * Ticket data that encodes specific information inside a ticket
  * Secret ticket data which can be encrypted inside a ticket
