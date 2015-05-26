@@ -122,50 +122,11 @@ public class TicketFactoryTest extends TestCase {
 		}
 	}
 
-	public void testCanonicalBasis() throws InterruptedException {
-		TicketSpec spec = TicketSpec.newDefaultBuilder().setGranularity(Granularity.MILLISECOND).build();
-		TicketFactory<Void, Void> factory = TicketConfig.getDefault().withSpecifications(spec).newFactory();
+	public void testCanonicalMachine() {
+		TicketFactory<Void, Void> factory = TicketConfig.getDefault().newFactory();
 		TicketMachine<Void, Void> machine1 = factory.machine();
-		TicketBasis<Void> basis1 = machine1.getBasis();
 		TicketMachine<Void, Void> machine2 = factory.machine();
-		TicketBasis<Void> basis2 = machine2.getBasis();
-		if (machine1 == machine2) {
-			System.err.println("Warning cannot: confirm basis canonicalization");
-		} else {
-			// we probably have different machines, but we should have the same basis
-			assertSame(basis1, basis2);
-		}
-	}
-
-	@SuppressWarnings("serial")
-	static class CachingPolicy extends DefaultTicketPolicy {
-
-		@Override
-		public int getMachineCacheSize() {
-			return 1;
-		}
-
-	}
-
-	public void testCachedMachine() {
-		TicketFactory<LongOrigin, Void> factory = TicketConfig.getDefault().withOriginType(LongOrigin.class).newFactory();
-		TicketMachine<LongOrigin, Void> machine1;
-		TicketMachine<LongOrigin, Void> machine2;
-
-		machine1 = factory.machine();
-		machine2 = factory.machine();
-		assertNotSame(machine1, machine2);
-
-		factory.setPolicy(new CachingPolicy());
-
-		machine1 = factory.machine();
-		machine2 = factory.machine();
 		assertSame(machine1, machine2);
-
-		factory.machineForOriginValues(1L);
-		machine2 = factory.machine();
-		assertNotSame(machine1, machine2);
-
 	}
 
 	interface SessionData {

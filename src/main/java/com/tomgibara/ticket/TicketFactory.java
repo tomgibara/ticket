@@ -117,10 +117,10 @@ public class TicketFactory<R, D> {
 	volatile TicketPolicy policy = sDefaultPolicy;
 
 	// fields for canonicalizing bases
-	private final ReferenceQueue<TicketBasis<R>> basisQueue = new ReferenceQueue<TicketBasis<R>>();
-	private final Map<TicketBasis<R>, BasisRef<R>> bases = new HashMap<TicketBasis<R>, BasisRef<R>>();
+	private final ReferenceQueue<TicketMachine<R, D>> machineQueue = new ReferenceQueue<TicketMachine<R,D>>();
+	private final Map<TicketBasis<R>, MachineRef<R,D>> machines = new HashMap<TicketBasis<R>, MachineRef<R,D>>();
 
-	private final MachineMap machines = new MachineMap();
+	private final MachineMap machinesCache = new MachineMap();
 
 	TicketFactory(TicketConfig<R,D> config, TicketSequences<R> sequences, byte[]... secrets) {
 		this.config = config;
@@ -352,49 +352,41 @@ public class TicketFactory<R, D> {
 	void recordMachineAccess(TicketMachine<R,D> machine) {
 		if (policy.getMachineCacheSize() <= 0) return;
 		TicketBasis<R> basis = machine.getBasis();
-		synchronized (machines) {
-			TicketMachine<R,D> cached = machines.get(basis);
-			if (cached != machine) machines.put(basis, machine);
+		synchronized (machinesCache) {
+			TicketMachine<R,D> cached = machinesCache.get(basis);
+			if (cached != machine) machinesCache.put(basis, machine);
 		}
 	}
 
 	// private helper methods
 
+	@SuppressWarnings("unchecked")
 	private TicketMachine<R, D> machineImpl(Object... values) {
-		// we use a canonical basis, this assists with reliably allocating sequences
-		TicketBasis<R> basis = getBasis(primarySpecIndex, values);
-		TicketMachine<R, D> machine;
-		if (policy.getMachineCacheSize() <= 0) {
-			machine = new TicketMachine<R, D>(this, basis);
-		} else synchronized (machines) {
-			machine = machines.get(basis);
+		TicketMachine<R,D> machine;
+		synchronized (machines) {
+			// clean up stale machines
+			while (true) {
+				MachineRef<R,D> ref = (MachineRef<R,D>) machineQueue.poll();
+				if (ref == null) break;
+				machines.remove(ref.key);
+			}
+			// check for existing machine instance
+			TicketBasis<R> basis = newBasis(primarySpecIndex, values);
+			MachineRef<R,D> ref = machines.get(basis);
+			machine = ref == null ? null : ref.get();
+			// record a new canonical instance if necessary
 			if (machine == null) {
 				machine = new TicketMachine<R, D>(this, basis);
-				machines.put(basis, machine);
+				ref = new MachineRef<R, D>(machine, machineQueue);
+				machines.put(ref.key, ref);
 			}
 		}
+		// cache a strong ref if desired
+		if (policy.getMachineCacheSize() > 0) synchronized (machinesCache) {
+			machinesCache.put(machine.getBasis(), machine);
+		}
+		// finally return the machine
 		return machine;
-	}
-
-	@SuppressWarnings("unchecked")
-	private TicketBasis<R> getBasis(int specNumber, Object... values) {
-		synchronized (bases) {
-			// clean up stale bases
-			while (true) {
-				BasisRef<R> ref = (BasisRef<R>) basisQueue.poll();
-				if (ref == null) break;
-				bases.remove(ref.key);
-			}
-			// check for existing canonical instance
-			TicketBasis<R> basis = newBasis(specNumber, values);
-			BasisRef<R> ref = bases.get(basis);
-			TicketBasis<R> canon = ref == null ? null : ref.get();
-			if (canon != null) return canon;
-			// record a new canonical instance
-			ref = new BasisRef<R>(basis, basisQueue);
-			bases.put(ref.key, ref);
-			return basis;
-		}
 	}
 
 	private TicketBasis<R> newBasis(int specNumber, Object... values) {
@@ -415,20 +407,9 @@ public class TicketFactory<R, D> {
 
 	private class Sequences implements TicketSequences<R> {
 
-		private final WeakHashMap<TicketBasis<R>, Sequence> map = new WeakHashMap<TicketBasis<R>, Sequence>();
-
 		@Override
-		// note: canonical basis means we can ensure the same basis is always mapped to the same sequence
 		public Sequence getSequence(TicketBasis<R> basis) {
-			Sequence sequence;
-			synchronized (map) {
-				sequence = map.get(basis);
-				if (sequence == null) {
-					sequence = new Sequence();
-				}
-				map.put(basis, sequence);
-			}
-			return sequence;
+			return new Sequence();
 		}
 
 	}
@@ -453,13 +434,13 @@ public class TicketFactory<R, D> {
 
 	}
 
-	private static class BasisRef<R> extends WeakReference<TicketBasis<R>> {
+	private static class MachineRef<R,D> extends WeakReference<TicketMachine<R,D>> {
 
 		final TicketBasis<R> key;
 
-		public BasisRef(TicketBasis<R> value, ReferenceQueue<? super TicketBasis<R>> queue) {
-			super(value, queue);
-			this.key = value.clone();
+		public MachineRef(TicketMachine<R,D> machine, ReferenceQueue<? super TicketMachine<R,D>> queue) {
+			super(machine, queue);
+			this.key = machine.getBasis();
 		}
 
 	}
