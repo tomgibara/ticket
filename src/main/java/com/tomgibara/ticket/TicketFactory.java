@@ -104,16 +104,6 @@ public class TicketFactory<R, D> {
 		return digests;
 	}
 
-	/**
-	 * The policy which is applied to the factory by default.
-	 *
-	 * @return the default policy
-	 */
-
-	public static TicketPolicy getDefaultPolicy() {
-		return sDefaultPolicy;
-	}
-
 	// fields
 
 	final TicketConfig<R, D> config;
