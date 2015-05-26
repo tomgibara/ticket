@@ -120,7 +120,7 @@ public class TicketFactory<R, D> {
 	private final ReferenceQueue<TicketBasis<R>> basisQueue = new ReferenceQueue<TicketBasis<R>>();
 	private final Map<TicketBasis<R>, BasisRef<R>> bases = new HashMap<TicketBasis<R>, BasisRef<R>>();
 
-	private final Map<TicketBasis<R>, TicketMachine<R,D>> machines = new HashMap<TicketBasis<R>, TicketMachine<R,D>>();
+	private final MachineMap machines = new MachineMap();
 
 	TicketFactory(TicketConfig<R,D> config, TicketSequences<R> sequences, byte[]... secrets) {
 		this.config = config;

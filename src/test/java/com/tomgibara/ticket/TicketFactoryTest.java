@@ -140,15 +140,15 @@ public class TicketFactoryTest extends TestCase {
 
 		@Override
 		public int getMachineCacheSize() {
-			return 2;
+			return 1;
 		}
 
 	}
 
 	public void testCachedMachine() {
-		TicketFactory<Void, Void> factory = TicketConfig.getDefault().newFactory();
-		TicketMachine<Void, Void> machine1;
-		TicketMachine<Void, Void> machine2;
+		TicketFactory<LongOrigin, Void> factory = TicketConfig.getDefault().withOriginType(LongOrigin.class).newFactory();
+		TicketMachine<LongOrigin, Void> machine1;
+		TicketMachine<LongOrigin, Void> machine2;
 
 		machine1 = factory.machine();
 		machine2 = factory.machine();
@@ -159,6 +159,11 @@ public class TicketFactoryTest extends TestCase {
 		machine1 = factory.machine();
 		machine2 = factory.machine();
 		assertSame(machine1, machine2);
+
+		factory.machineForOriginValues(1L);
+		machine2 = factory.machine();
+		assertNotSame(machine1, machine2);
+
 	}
 
 	interface SessionData {

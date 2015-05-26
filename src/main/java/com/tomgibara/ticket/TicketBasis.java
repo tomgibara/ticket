@@ -18,8 +18,6 @@ package com.tomgibara.ticket;
 
 import java.math.BigInteger;
 
-import javax.management.RuntimeErrorException;
-
 import com.tomgibara.bits.BitVector;
 
 /**
